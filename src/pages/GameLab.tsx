@@ -68,6 +68,16 @@ const GameLab = () => {
     scores: GameScore;
     code?: string;
   } | null>(null);
+  const [loadingStep, setLoadingStep] = useState(0);
+  const [progress, setProgress] = useState(0);
+  
+  const loadingSteps = [
+    { text: "正在分析游戏机制...", icon: Brain },
+    { text: "构思融合方案...", icon: Sparkles },
+    { text: "生成游戏代码...", icon: Wand2 },
+    { text: "优化游戏体验...", icon: Zap },
+    { text: "即将完成...", icon: Gamepad2 },
+  ];
 
   const toggleGame = (game: GameType) => {
     if (selectedGames.find(g => g.id === game.id)) {
@@ -92,6 +102,24 @@ const GameLab = () => {
 
     setIsGenerating(true);
     setGeneratedGame(null);
+    setProgress(0);
+    setLoadingStep(0);
+
+    // 启动进度动画
+    let progressValue = 0;
+    let stepIndex = 0;
+    let progressInterval: NodeJS.Timeout | null = null;
+    let stepInterval: NodeJS.Timeout | null = null;
+    
+    progressInterval = setInterval(() => {
+      progressValue += 1;
+      setProgress(Math.min(progressValue, 95));
+    }, 150);
+    
+    stepInterval = setInterval(() => {
+      stepIndex = (stepIndex + 1) % loadingSteps.length;
+      setLoadingStep(stepIndex);
+    }, 2500);
 
     try {
       // #region agent log
@@ -120,22 +148,40 @@ Use a fun, colorful visual style.`;
       fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:111',message:'After game-lab-fusion invoke',data:{hasError:!!conceptResponse.error,error:conceptResponse.error,hasData:!!conceptResponse.data,dataKeys:conceptResponse.data?Object.keys(conceptResponse.data):[]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
       // #endregion
 
-      if (conceptResponse.error) throw conceptResponse.error;
+      if (conceptResponse.error) {
+        const errorMsg = conceptResponse.error.message || String(conceptResponse.error);
+        if (errorMsg.includes("429") || errorMsg.includes("rate limit")) {
+          throw new Error("请求过于频繁，请稍等片刻后重试");
+        } else if (errorMsg.includes("402") || errorMsg.includes("quota")) {
+          throw new Error("API 使用额度已用完，请稍后重试");
+        } else {
+          throw new Error(`概念生成失败: ${errorMsg}`);
+        }
+      }
 
       const concept = conceptResponse.data;
 
       // Then generate the actual game code
+      // Get Supabase URL and key from environment (required for streaming response)
+      // Note: We use fetch for streaming, but get config from env vars that Supabase client uses
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      
+      if (!supabaseUrl || !supabaseKey) {
+        throw new Error("Supabase 配置错误，请检查环境变量设置");
+      }
+
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:116',message:'Before generate-creation fetch',data:{url:`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-creation`,hasAuth:!!import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:127',message:'Before generate-creation fetch',data:{url:`${supabaseUrl}/functions/v1/generate-creation`,hasAuth:!!supabaseKey},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
       // #endregion
 
       const codeResponse = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-creation`,
+        `${supabaseUrl}/functions/v1/generate-creation`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            Authorization: `Bearer ${supabaseKey}`,
           },
           body: JSON.stringify({ 
             prompt: `${prompt}\n\nGame concept: ${concept.name} - ${concept.description}` 
@@ -144,19 +190,31 @@ Use a fun, colorful visual style.`;
       );
 
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:130',message:'After generate-creation fetch',data:{ok:codeResponse.ok,status:codeResponse.status,statusText:codeResponse.statusText,hasBody:!!codeResponse.body,contentType:codeResponse.headers.get('content-type')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:140',message:'After generate-creation fetch',data:{ok:codeResponse.ok,status:codeResponse.status,statusText:codeResponse.statusText,hasBody:!!codeResponse.body,contentType:codeResponse.headers.get('content-type')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
       // #endregion
 
       if (!codeResponse.ok) {
         const errorText = await codeResponse.text();
         // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:133',message:'generate-creation fetch failed',data:{status:codeResponse.status,errorText},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+        fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:145',message:'generate-creation fetch failed',data:{status:codeResponse.status,errorText},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
         // #endregion
-        throw new Error(`Failed to generate game: ${codeResponse.status} ${errorText}`);
+        
+        let errorMsg = "游戏代码生成失败";
+        if (codeResponse.status === 429) {
+          errorMsg = "请求过于频繁，请稍等片刻后重试";
+        } else if (codeResponse.status === 402) {
+          errorMsg = "API 使用额度已用完，请稍后重试";
+        } else if (codeResponse.status === 400) {
+          errorMsg = "请求参数错误，请重试";
+        } else if (codeResponse.status === 500) {
+          errorMsg = "服务器错误，请稍后重试";
+        }
+        
+        throw new Error(errorMsg);
       }
 
       const reader = codeResponse.body?.getReader();
-      if (!reader) throw new Error("No response body");
+      if (!reader) throw new Error("服务器未返回数据，请重试");
 
       const decoder = new TextDecoder();
       let fullContent = "";
@@ -183,13 +241,13 @@ Use a fun, colorful visual style.`;
           try {
             const parsed = JSON.parse(jsonStr);
             // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:157',message:'Parsing SSE chunk',data:{hasChoices:!!parsed.choices,choicesLength:parsed.choices?.length,hasDelta:!!parsed.choices?.[0]?.delta,hasContent:!!parsed.choices?.[0]?.delta?.content,parsedKeys:Object.keys(parsed)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+            fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:172',message:'Parsing SSE chunk',data:{hasChoices:!!parsed.choices,choicesLength:parsed.choices?.length,hasDelta:!!parsed.choices?.[0]?.delta,hasContent:!!parsed.choices?.[0]?.delta?.content,parsedKeys:Object.keys(parsed)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
             // #endregion
             const content = parsed.choices?.[0]?.delta?.content;
             if (content) fullContent += content;
           } catch (parseError) {
             // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:162',message:'SSE parse error',data:{error:parseError instanceof Error?parseError.message:String(parseError),jsonStr:jsonStr.substring(0,200)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+            fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:179',message:'SSE parse error',data:{error:parseError instanceof Error?parseError.message:String(parseError),jsonStr:jsonStr.substring(0,200)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
             // #endregion
             buffer = line + "\n" + buffer;
             break;
@@ -197,15 +255,53 @@ Use a fun, colorful visual style.`;
         }
       }
 
-      // Extract HTML
-      let htmlCode = fullContent;
+      // Extract HTML with multiple fallback strategies
+      let htmlCode = "";
+      
+      // Strategy 1: Look for markdown code blocks
       const htmlMatch = fullContent.match(/```html\s*([\s\S]*?)```/);
       if (htmlMatch) {
         htmlCode = htmlMatch[1].trim();
       } else {
-        const doctypeMatch = fullContent.match(/(<!DOCTYPE html[\s\S]*<\/html>)/i);
-        if (doctypeMatch) htmlCode = doctypeMatch[1];
+        // Strategy 2: Look for HTML wrapped in code blocks without language tag
+        const codeBlockMatch = fullContent.match(/```\s*([\s\S]*?)```/);
+        if (codeBlockMatch && codeBlockMatch[1].includes("<!DOCTYPE html")) {
+          htmlCode = codeBlockMatch[1].trim();
+        } else {
+          // Strategy 3: Look for raw HTML with DOCTYPE
+          const doctypeMatch = fullContent.match(/(<!DOCTYPE html[\s\S]*<\/html>)/i);
+          if (doctypeMatch) {
+            htmlCode = doctypeMatch[1];
+          } else {
+            // Strategy 4: Look for HTML without DOCTYPE (just <html> tag)
+            const htmlTagMatch = fullContent.match(/(<html[\s\S]*<\/html>)/i);
+            if (htmlTagMatch) {
+              htmlCode = htmlTagMatch[1];
+            } else {
+              // Strategy 5: If content looks like HTML, use it directly
+              if (fullContent.trim().startsWith("<") && fullContent.includes("</html>")) {
+                htmlCode = fullContent.trim();
+              }
+            }
+          }
+        }
       }
+
+      // Validate extracted HTML
+      if (!htmlCode || (!htmlCode.includes("<!DOCTYPE html") && !htmlCode.includes("<html"))) {
+        // Log the issue for debugging
+        console.error("HTML extraction failed. Full content preview:", fullContent.substring(0, 500));
+        throw new Error("无法从 AI 响应中提取有效的 HTML 代码。AI 可能没有生成完整的游戏代码，请尝试重新生成。");
+      }
+
+      // 完成进度
+      clearInterval(progressInterval);
+      clearInterval(stepInterval);
+      setProgress(100);
+      setLoadingStep(loadingSteps.length - 1);
+      
+      // 短暂延迟以显示完成状态
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       setGeneratedGame({
         name: concept.name,
@@ -224,10 +320,72 @@ Use a fun, colorful visual style.`;
       fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:187',message:'Fusion error caught',data:{error:error instanceof Error?error.message:String(error),errorStack:error instanceof Error?error.stack:undefined},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
       // #endregion
       console.error("Fusion error:", error);
-      toast.error("融合失败，请重试");
+      
+      // 详细的错误分类和友好提示
+      let errorMessage = "融合失败，请重试";
+      
+      if (error instanceof Error) {
+        const errorMsg = error.message.toLowerCase();
+        
+        // 网络错误
+        if (errorMsg.includes("fetch") || errorMsg.includes("network") || errorMsg.includes("failed to fetch")) {
+          errorMessage = "网络连接失败，请检查网络后重试";
+        }
+        // API 错误
+        else if (errorMsg.includes("429") || errorMsg.includes("rate limit")) {
+          errorMessage = "请求过于频繁，请稍等片刻后重试";
+        }
+        // 认证错误
+        else if (errorMsg.includes("401") || errorMsg.includes("unauthorized") || errorMsg.includes("auth")) {
+          errorMessage = "认证失败，请刷新页面后重试";
+        }
+        // 服务器错误
+        else if (errorMsg.includes("500") || errorMsg.includes("server")) {
+          errorMessage = "服务器暂时无法响应，请稍后重试";
+        }
+        // API Key 错误
+        else if (errorMsg.includes("api key") || errorMsg.includes("key")) {
+          errorMessage = "API 配置错误，请联系管理员";
+        }
+        // 生成失败
+        else if (errorMsg.includes("generate") || errorMsg.includes("generation")) {
+          errorMessage = "游戏生成失败，可能是内容过于复杂，请尝试其他组合";
+        }
+        // 解析错误
+        else if (errorMsg.includes("parse") || errorMsg.includes("json")) {
+          errorMessage = "数据解析失败，请重试";
+        }
+        // 超时
+        else if (errorMsg.includes("timeout") || errorMsg.includes("time out")) {
+          errorMessage = "生成超时，请重试或选择更简单的游戏组合";
+        }
+        // HTML 提取错误
+        else if (errorMsg.includes("无法从 AI 响应中提取") || errorMsg.includes("extract") || errorMsg.includes("valid HTML")) {
+          errorMessage = "无法提取有效的游戏代码，AI 可能没有生成完整代码。请尝试重新生成或选择其他游戏组合。";
+        }
+        // 其他错误，显示原始消息（如果友好）
+        else if (error.message.length < 100) {
+          errorMessage = error.message;
+        }
+      } else if (typeof error === "string") {
+        errorMessage = error;
+      }
+      
+      toast.error(errorMessage);
     } finally {
+      // 清理进度动画
+      if (progressInterval) clearInterval(progressInterval);
+      if (stepInterval) clearInterval(stepInterval);
       setIsGenerating(false);
+      setProgress(0);
+      setLoadingStep(0);
     }
+  };
+
+  const handleRegenerate = () => {
+    // 保持用户选择的游戏，只重新生成
+    setGeneratedGame(null);
+    handleFusion();
   };
 
   const handlePlayGame = async () => {
@@ -417,7 +575,7 @@ Use a fun, colorful visual style.`;
             )}
           </div>
 
-          {/* Loading Animation */}
+          {/* Loading Animation with Progress */}
           {isGenerating && (
             <div className="rounded-2xl bg-card border overflow-hidden animate-fade-in">
               <div className="relative h-48 overflow-hidden bg-gradient-to-br from-purple-500/20 via-pink-500/20 to-orange-500/20">
@@ -436,13 +594,55 @@ Use a fun, colorful visual style.`;
                   </div>
                 </div>
               </div>
-              <div className="p-6 text-center">
-                <p className="font-display font-semibold text-lg mb-2">
-                  AI 正在进行基因重组...
-                </p>
-                <p className="text-muted-foreground text-sm">
-                  {selectedGames.map(g => g.name).join(" × ")} = ???
-                </p>
+              <div className="p-6 border-t border-border bg-muted/30">
+                {/* Step text */}
+                <div className="text-center mb-4">
+                  <p className="font-display font-semibold text-foreground animate-fade-in" key={loadingStep}>
+                    {loadingSteps[loadingStep]?.text || "生成中..."}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {selectedGames.map(g => g.name).join(" × ")} = ???
+                  </p>
+                </div>
+
+                {/* Progress bar */}
+                <div className="relative h-2 bg-muted rounded-full overflow-hidden mb-2">
+                  <div
+                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary via-secondary to-primary rounded-full transition-all duration-300 ease-out"
+                    style={{ 
+                      width: `${progress}%`,
+                      backgroundSize: '200% 100%',
+                      animation: 'shimmer 2s linear infinite',
+                    }}
+                  />
+                </div>
+                
+                {/* Progress percentage */}
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>生成中</span>
+                  <span className="font-mono">{progress}%</span>
+                </div>
+
+                {/* Step indicators */}
+                <div className="flex justify-center gap-2 mt-4">
+                  {loadingSteps.map((step, index) => {
+                    const StepIcon = step.icon;
+                    return (
+                      <div
+                        key={index}
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                          index === loadingStep
+                            ? "bg-primary text-primary-foreground scale-110"
+                            : index < loadingStep
+                            ? "bg-primary/20 text-primary"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        <StepIcon className="w-4 h-4" />
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}
@@ -511,9 +711,16 @@ Use a fun, colorful visual style.`;
                     <Gamepad2 className="w-4 h-4" />
                     进入游戏
                   </Button>
-                  <Button variant="outline" onClick={() => setGeneratedGame(null)} className="gap-2">
+                  <Button variant="outline" onClick={handleRegenerate} className="gap-2" disabled={isGenerating}>
                     <Shuffle className="w-4 h-4" />
-                    重新融合
+                    重新生成
+                  </Button>
+                  <Button variant="outline" onClick={() => {
+                    setGeneratedGame(null);
+                    setSelectedGames([]);
+                  }} className="gap-2">
+                    <X className="w-4 h-4" />
+                    重新选择
                   </Button>
                 </div>
               </div>
