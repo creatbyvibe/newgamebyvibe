@@ -45,6 +45,32 @@ TECHNICAL REQUIREMENTS:
 5. Sound effects using Web Audio API or Audio elements
 6. Game loop with proper state management (start, playing, paused, game over)
 
+SAVE/LOAD SYSTEM (for simulation/raising games):
+For games that need persistence (virtual pets, idle games, RPGs, simulation), include this save system:
+\`\`\`javascript
+// Save game state to parent window
+function saveGame(saveData) {
+  window.parent.postMessage({ type: 'GAME_SAVE', data: saveData }, '*');
+}
+
+// Request load from parent window
+function requestLoad() {
+  window.parent.postMessage({ type: 'GAME_LOAD_REQUEST' }, '*');
+}
+
+// Listen for loaded data
+window.addEventListener('message', (event) => {
+  if (event.data.type === 'GAME_LOAD_RESPONSE') {
+    // event.data.saveData contains the loaded game state
+    if (event.data.saveData) {
+      // Restore game state here
+    }
+  }
+});
+
+// Call requestLoad() on game start
+\`\`\`
+
 VISUAL STYLE:
 - Vibrant, colorful palette (avoid boring grays)
 - Rounded corners, soft shadows

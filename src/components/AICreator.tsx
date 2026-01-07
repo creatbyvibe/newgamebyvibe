@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import AuthModal from "./AuthModal";
 import CreationEditor from "./CreationEditor";
+import DesignAssistant from "./DesignAssistant";
 
 // Game-focused suggestions to inspire creativity
 const gameSuggestions = [
@@ -388,6 +389,14 @@ const AICreator = () => {
                 </button>
               ))}
             </div>
+
+            {/* Design Assistant */}
+            {input.trim().length > 5 && (
+              <DesignAssistant 
+                prompt={input} 
+                onUseOptimized={(optimized) => setInput(optimized)} 
+              />
+            )}
           </div>
         )}
       </div>
