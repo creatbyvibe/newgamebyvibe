@@ -110,8 +110,44 @@ export type Database = {
           },
         ]
       }
+      creation_versions: {
+        Row: {
+          change_note: string | null
+          created_at: string | null
+          creation_id: string
+          html_code: string
+          id: string
+          version: number
+        }
+        Insert: {
+          change_note?: string | null
+          created_at?: string | null
+          creation_id: string
+          html_code: string
+          id?: string
+          version: number
+        }
+        Update: {
+          change_note?: string | null
+          created_at?: string | null
+          creation_id?: string
+          html_code?: string
+          id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creation_versions_creation_id_fkey"
+            columns: ["creation_id"]
+            isOneToOne: false
+            referencedRelation: "creations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       creations: {
         Row: {
+          auto_saved_at: string | null
           created_at: string
           description: string | null
           html_code: string
@@ -120,11 +156,14 @@ export type Database = {
           likes: number | null
           plays: number | null
           prompt: string
+          status: string | null
           title: string
           updated_at: string
           user_id: string
+          version: number | null
         }
         Insert: {
+          auto_saved_at?: string | null
           created_at?: string
           description?: string | null
           html_code: string
@@ -133,11 +172,14 @@ export type Database = {
           likes?: number | null
           plays?: number | null
           prompt: string
+          status?: string | null
           title: string
           updated_at?: string
           user_id: string
+          version?: number | null
         }
         Update: {
+          auto_saved_at?: string | null
           created_at?: string
           description?: string | null
           html_code?: string
@@ -146,9 +188,11 @@ export type Database = {
           likes?: number | null
           plays?: number | null
           prompt?: string
+          status?: string | null
           title?: string
           updated_at?: string
           user_id?: string
+          version?: number | null
         }
         Relationships: []
       }
