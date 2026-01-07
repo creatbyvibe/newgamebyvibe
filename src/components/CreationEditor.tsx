@@ -391,7 +391,7 @@ const CreationEditor = ({
                     ref={iframeRef}
                     srcDoc={previewCode}
                     className="w-full h-full border-0"
-                    sandbox="allow-scripts allow-forms"
+                    sandbox="allow-scripts allow-forms allow-modals"
                     title="Creation Preview"
                   />
                 </div>
@@ -402,7 +402,7 @@ const CreationEditor = ({
                   ref={iframeRef}
                   srcDoc={previewCode}
                   className="w-full h-full border-0"
-                  sandbox="allow-scripts allow-forms"
+                  sandbox="allow-scripts allow-forms allow-modals"
                   title="Creation Preview"
                 />
               </div>
