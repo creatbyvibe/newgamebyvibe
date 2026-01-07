@@ -23,9 +23,9 @@
 | 样式 | Tailwind CSS + shadcn/ui |
 | 路由 | React Router v6 |
 | 状态管理 | React Query + useState |
-| 后端 | Lovable Cloud (Supabase) |
-| AI网关 | Lovable AI (Gemini 2.5 Flash) |
-| 部署 | Lovable Platform |
+| 后端 | Supabase (自托管可迁移) |
+| AI网关 | Gemini API（直接调用） |
+| 部署 | Vercel / Cloudflare Pages / 自托管 |
 
 ---
 
@@ -214,10 +214,10 @@ creations.status      -- draft/published
 ## 🔑 环境变量
 
 ```bash
-# 自动配置 (Lovable Cloud)
-VITE_SUPABASE_URL          # Supabase API URL
-VITE_SUPABASE_PUBLISHABLE_KEY  # 公开密钥
-LOVABLE_API_KEY            # AI网关密钥 (仅Edge Function可用)
+# 环境变量
+VITE_SUPABASE_URL               # Supabase API URL
+VITE_SUPABASE_PUBLISHABLE_KEY   # Supabase anon key
+GEMINI_API_KEY                  # Gemini API Key（Edge Functions 使用）
 ```
 
 ---

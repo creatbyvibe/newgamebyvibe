@@ -20,9 +20,9 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY is not configured");
     }
 
     const systemPrompt = `You are an expert game developer AI that creates fun, FULLY PLAYABLE HTML5 games.
@@ -138,21 +138,30 @@ Return ONLY the HTML code. Start with <!DOCTYPE html> and end with </html>.
 The game MUST be playable - test your logic mentally before outputting!`;
 
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `Create: ${prompt.trim()}` }
-        ],
-        stream: true,
-      }),
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:streamGenerateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: `${systemPrompt}\n\nUser request: ${prompt.trim()}` },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.9,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 8192,
+          },
+        }),
+      }
+    );
 
     if (!response.ok) {
       if (response.status === 429) {
@@ -175,7 +184,62 @@ The game MUST be playable - test your logic mentally before outputting!`;
       );
     }
 
-    return new Response(response.body, {
+    if (!response.body) {
+      throw new Error("No response body from Gemini");
+    }
+
+    // Convert Gemini streaming chunks to SSE format expected by frontend
+    const reader = response.body.getReader();
+    const textDecoder = new TextDecoder();
+    const textEncoder = new TextEncoder();
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        let buffer = "";
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += textDecoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed) continue;
+
+              // Gemini streaming does not always prefix with "data:"
+              const jsonStr = trimmed.startsWith("data:")
+                ? trimmed.slice(5).trim()
+                : trimmed;
+
+              try {
+                const data = JSON.parse(jsonStr);
+                const textChunk =
+                  data.candidates?.[0]?.content?.parts
+                    ?.map((p: { text?: string }) => p.text || "")
+                    .join("") || "";
+
+                if (textChunk) {
+                  const ssePayload = `data: ${JSON.stringify({
+                    choices: [{ delta: { content: textChunk } }],
+                  })}\n\n`;
+                  controller.enqueue(textEncoder.encode(ssePayload));
+                }
+              } catch {
+                // ignore malformed lines
+              }
+            }
+          }
+          controller.close();
+        } catch (err) {
+          controller.error(err);
+        }
+      },
+    });
+
+    return new Response(stream, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (error) {

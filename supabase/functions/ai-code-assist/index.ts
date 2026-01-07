@@ -27,9 +27,9 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY is not configured");
     }
 
     const systemPrompt = `You are an expert web developer AI assistant that helps modify HTML/CSS/JavaScript code for games and interactive tools.
@@ -60,20 +60,32 @@ Current code to modify:
 ${currentCode}
 \`\`\``;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `Please modify the code: ${prompt.trim()}` },
-        ],
-      }),
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: `${systemPrompt}\n\nPlease modify the code: ${prompt.trim()}`,
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 4096,
+          },
+        }),
+      }
+    );
 
     if (!response.ok) {
       if (response.status === 429) {
@@ -97,7 +109,10 @@ ${currentCode}
     }
 
     const data = await response.json();
-    let content = data.choices?.[0]?.message?.content || "";
+    let content =
+      data.candidates?.[0]?.content?.parts
+        ?.map((p: { text?: string }) => p.text || "")
+        .join("") || "";
 
     // Try to parse as JSON first
     try {
