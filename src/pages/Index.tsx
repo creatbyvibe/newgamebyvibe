@@ -1,66 +1,48 @@
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import AICreator from "@/components/AICreator";
-import { BentoGrid, BentoItem } from "@/components/BentoGrid";
 import WorkGallery from "@/components/WorkGallery";
 import {
   Gamepad2,
-  Dices,
-  Music,
-  Palette,
   Timer,
-  MessageCircle,
+  Palette,
   Sparkles,
   Github,
   Twitter,
+  ArrowRight,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-const templates = [
+const featuredTemplates = [
   {
     title: "Pong Game",
-    description: "Classic arcade game with paddle controls",
-    icon: Gamepad2,
-    gradient: "primary" as const,
-    size: "large" as const,
-  },
-  {
-    title: "Decision Dice",
-    description: "Let fate decide for you",
-    icon: Dices,
-    gradient: "secondary" as const,
-    size: "small" as const,
-  },
-  {
-    title: "Beat Keeper",
-    description: "Metronome for practice",
-    icon: Music,
-    gradient: "accent" as const,
-    size: "small" as const,
-  },
-  {
-    title: "Meme Maker",
-    description: "Create & share memes",
-    icon: Palette,
-    gradient: "fun" as const,
-    size: "medium" as const,
+    emoji: "🏓",
+    description: "经典街机游戏",
+    gradient: "from-blue-500 to-cyan-500",
   },
   {
     title: "Pomodoro",
-    description: "Focus timer for productivity",
-    icon: Timer,
-    gradient: "secondary" as const,
-    size: "small" as const,
+    emoji: "🍅",
+    description: "专注计时器",
+    gradient: "from-red-500 to-orange-500",
   },
   {
-    title: "Quick Chat",
-    description: "Temporary chat rooms",
-    icon: MessageCircle,
-    gradient: "primary" as const,
-    size: "small" as const,
+    title: "Memory Cards",
+    emoji: "🎴",
+    description: "记忆翻牌游戏",
+    gradient: "from-purple-500 to-pink-500",
+  },
+  {
+    title: "Drawing Board",
+    emoji: "🎨",
+    description: "创意画板",
+    gradient: "from-green-500 to-teal-500",
   },
 ];
 
 const Index = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-background overflow-hidden">
       <Navbar />
@@ -80,23 +62,23 @@ const Index = () => {
             <div className="inline-flex items-center gap-2 bg-primary/10 rounded-full px-4 py-1.5 mb-6 animate-fade-in">
               <Sparkles className="w-3.5 h-3.5 text-primary" />
               <span className="text-sm font-medium text-primary tracking-wide">
-                Create anything with AI
+                用 AI 创造一切
               </span>
             </div>
 
-            {/* Title - Using display font with proper hierarchy */}
+            {/* Title */}
             <h1 className="font-display animate-fade-in" style={{ animationDelay: "100ms" }}>
-              <span className="block text-foreground">Create by Vibe,</span>
-              <span className="block text-gradient-primary mt-1">Share the Joy</span>
+              <span className="block text-foreground">随心创造,</span>
+              <span className="block text-gradient-primary mt-1">分享快乐</span>
             </h1>
 
-            {/* Subtitle - Body font with proper contrast */}
+            {/* Subtitle */}
             <p
               className="text-lg text-muted-foreground max-w-md mt-6 animate-fade-in"
               style={{ animationDelay: "200ms" }}
             >
-              Turn your ideas into fun games and tools in minutes.
-              <span className="text-foreground font-medium"> No coding needed.</span>
+              几分钟内将创意变成游戏和工具。
+              <span className="text-foreground font-medium">无需编程。</span>
             </p>
           </div>
 
@@ -115,48 +97,67 @@ const Index = () => {
           >
             <div className="text-center">
               <div className="text-2xl font-bold text-foreground">50k+</div>
-              <div className="text-sm text-muted-foreground mt-1">Creations</div>
+              <div className="text-sm text-muted-foreground mt-1">作品</div>
             </div>
             <div className="w-px h-10 bg-border" />
             <div className="text-center">
               <div className="text-2xl font-bold text-foreground">10k+</div>
-              <div className="text-sm text-muted-foreground mt-1">Creators</div>
+              <div className="text-sm text-muted-foreground mt-1">创作者</div>
             </div>
             <div className="w-px h-10 bg-border" />
             <div className="text-center">
               <div className="text-2xl font-bold text-primary">∞</div>
-              <div className="text-sm text-muted-foreground mt-1">Possibilities</div>
+              <div className="text-sm text-muted-foreground mt-1">可能性</div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Templates Section */}
-      <section id="explore" className="py-24 px-6 bg-muted/30">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-14">
-            <h2 className="font-display text-foreground mb-4">
-              Start from a template
-            </h2>
-            <p className="text-base text-muted-foreground max-w-md mx-auto">
-              Pick a starter or describe your own idea
-            </p>
+      {/* Featured Templates Section */}
+      <section className="py-16 px-6 bg-muted/30">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="font-display text-xl text-foreground">精选模板</h2>
+              <p className="text-sm text-muted-foreground mt-1">快速开始你的创作</p>
+            </div>
+            <Button 
+              variant="ghost" 
+              className="gap-2"
+              onClick={() => navigate('/inspiration')}
+            >
+              查看全部 30+ 模板
+              <ArrowRight className="w-4 h-4" />
+            </Button>
           </div>
 
-          <BentoGrid>
-            {templates.map((template, index) => (
-              <BentoItem
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {featuredTemplates.map((template, index) => (
+              <div
                 key={template.title}
-                {...template}
-                delay={index * 80}
-              />
-            ))}
-          </BentoGrid>
+                onClick={() => navigate('/inspiration')}
+                className="group relative bg-card rounded-2xl p-5 border border-border hover:border-primary/30 transition-all duration-300 cursor-pointer hover:-translate-y-1 animate-fade-in"
+                style={{ animationDelay: `${index * 80}ms` }}
+              >
+                {/* Gradient bg on hover */}
+                <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${template.gradient} opacity-0 group-hover:opacity-5 transition-opacity`} />
+                
+                <div className="relative z-10">
+                  <div className="text-3xl mb-3">{template.emoji}</div>
+                  <h3 className="font-medium text-foreground group-hover:text-primary transition-colors">
+                    {template.title}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {template.description}
+                  </p>
+                </div>
 
-          <div className="text-center mt-12">
-            <Button variant="outline" size="lg">
-              Browse 100+ templates
-            </Button>
+                {/* Hover arrow */}
+                <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                  <ArrowRight className="w-4 h-4 text-primary" />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -176,17 +177,18 @@ const Index = () => {
             
             <div className="relative z-10 p-12 md:p-16 text-center">
               <h2 className="font-display text-2xl md:text-3xl text-white mb-4">
-                Ready to create something fun?
+                准备好创造有趣的东西了吗?
               </h2>
               <p className="text-white/80 mb-8 max-w-sm mx-auto text-base">
-                Join 10,000+ creators turning ideas into reality
+                加入 10,000+ 创作者，将创意变为现实
               </p>
               <Button
                 size="lg"
                 className="bg-white text-foreground hover:bg-white/90 gap-2 shadow-soft"
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
               >
                 <Sparkles className="w-5 h-5 text-primary" />
-                Start for free
+                免费开始
               </Button>
             </div>
           </div>
@@ -208,7 +210,7 @@ const Index = () => {
                 </span>
               </div>
               <p className="text-sm text-muted-foreground mt-2">
-                Create by Vibe, Share the Joy
+                随心创造，分享快乐
               </p>
             </div>
 
@@ -218,19 +220,19 @@ const Index = () => {
                 href="#"
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                About
+                关于
               </a>
               <a
                 href="#"
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                Help
+                帮助
               </a>
               <a
                 href="#"
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                Privacy
+                隐私
               </a>
             </div>
 

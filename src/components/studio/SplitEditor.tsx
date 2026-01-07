@@ -3,11 +3,12 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/componen
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Wand2, Code, MessageSquare, RefreshCw } from 'lucide-react';
+import { Loader2, Wand2, Code, MessageSquare, RefreshCw, Undo2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import CodeEditor from '@/components/CodeEditor';
+import AISkills from './AISkills';
 
 interface SplitEditorProps {
   code: string;
@@ -16,14 +17,29 @@ interface SplitEditorProps {
   creationId?: string;
 }
 
+interface ChatMessage {
+  role: 'user' | 'ai';
+  content: string;
+  previousCode?: string;
+}
+
 const SplitEditor = ({ code, prompt, onCodeChange, creationId }: SplitEditorProps) => {
   const [activeTab, setActiveTab] = useState<'ai' | 'code'>('ai');
   const [aiPrompt, setAiPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [chatHistory, setChatHistory] = useState<Array<{ role: 'user' | 'ai'; content: string }>>([]);
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // Example prompts based on context
+  const examplePrompts = [
+    "让玩家移动更快",
+    "添加一个计分系统",
+    "改变背景颜色为渐变色",
+    "添加游戏结束画面",
+  ];
 
   // Update iframe when code changes
   useEffect(() => {
@@ -37,6 +53,11 @@ const SplitEditor = ({ code, prompt, onCodeChange, creationId }: SplitEditorProp
       }
     }
   }, [code]);
+
+  // Auto-scroll to bottom of chat
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatHistory]);
 
   // Handle game save messages
   const handleMessage = useCallback(async (event: MessageEvent) => {
@@ -114,16 +135,18 @@ const SplitEditor = ({ code, prompt, onCodeChange, creationId }: SplitEditorProp
   }, [handleMessage]);
 
   // AI modification
-  const handleAIModify = async () => {
-    if (!aiPrompt.trim() || isGenerating) return;
+  const handleAIModify = async (customPrompt?: string) => {
+    const promptToUse = customPrompt || aiPrompt;
+    if (!promptToUse.trim() || isGenerating) return;
 
     setIsGenerating(true);
-    setChatHistory(prev => [...prev, { role: 'user', content: aiPrompt }]);
+    const currentCode = code;
+    setChatHistory(prev => [...prev, { role: 'user', content: promptToUse }]);
     
     try {
       const response = await supabase.functions.invoke('ai-code-assist', {
         body: {
-          prompt: aiPrompt,
+          prompt: promptToUse,
           currentCode: code,
           context: prompt,
         },
@@ -132,27 +155,39 @@ const SplitEditor = ({ code, prompt, onCodeChange, creationId }: SplitEditorProp
       if (response.error) throw response.error;
 
       const newCode = response.data?.code || code;
-      const explanation = response.data?.explanation || 'Code updated successfully';
+      const explanation = response.data?.explanation || '✅ 代码已更新成功';
       
       onCodeChange(newCode);
-      setChatHistory(prev => [...prev, { role: 'ai', content: explanation }]);
+      setChatHistory(prev => [...prev, { 
+        role: 'ai', 
+        content: explanation,
+        previousCode: currentCode 
+      }]);
       setAiPrompt('');
       
       toast({
-        title: 'Code Updated',
-        description: 'AI has modified your game',
+        title: '修改成功',
+        description: 'AI 已更新你的作品',
       });
     } catch (error) {
       console.error('AI modification failed:', error);
-      setChatHistory(prev => [...prev, { role: 'ai', content: 'Sorry, I encountered an error. Please try again.' }]);
+      setChatHistory(prev => [...prev, { role: 'ai', content: '❌ 抱歉，遇到了一些问题。请重试。' }]);
       toast({
-        title: 'Error',
-        description: 'Failed to modify code',
+        title: '出错了',
+        description: '修改失败，请重试',
         variant: 'destructive',
       });
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleUndo = (previousCode: string) => {
+    onCodeChange(previousCode);
+    toast({
+      title: '已撤销',
+      description: '代码已恢复到上一个版本',
+    });
   };
 
   const handleRefresh = () => {
@@ -173,7 +208,7 @@ const SplitEditor = ({ code, prompt, onCodeChange, creationId }: SplitEditorProp
       <ResizablePanel defaultSize={55} minSize={30}>
         <div className="h-full flex flex-col">
           <div className="h-10 border-b flex items-center justify-between px-3 bg-muted/30">
-            <span className="text-sm font-medium">Preview</span>
+            <span className="text-sm font-medium">预览</span>
             <Button variant="ghost" size="sm" onClick={handleRefresh}>
               <RefreshCw className="w-4 h-4" />
             </Button>
@@ -188,7 +223,7 @@ const SplitEditor = ({ code, prompt, onCodeChange, creationId }: SplitEditorProp
               />
             ) : (
               <div className="h-full flex items-center justify-center text-muted-foreground">
-                No content to preview
+                暂无内容
               </div>
             )}
           </div>
@@ -204,54 +239,87 @@ const SplitEditor = ({ code, prompt, onCodeChange, creationId }: SplitEditorProp
             <TabsList className="w-full justify-start rounded-none h-10 bg-muted/30">
               <TabsTrigger value="ai" className="gap-2">
                 <MessageSquare className="w-4 h-4" />
-                AI Assistant
+                AI 助手
               </TabsTrigger>
               <TabsTrigger value="code" className="gap-2">
                 <Code className="w-4 h-4" />
-                Code
+                代码
               </TabsTrigger>
             </TabsList>
           </div>
 
-          <TabsContent value="ai" className="flex-1 m-0 flex flex-col">
+          <TabsContent value="ai" className="flex-1 m-0 flex flex-col overflow-hidden">
+            {/* AI Skills */}
+            <div className="p-3 border-b bg-muted/20">
+              <AISkills 
+                onSelectSkill={(skillPrompt) => handleAIModify(skillPrompt)} 
+                disabled={isGenerating}
+              />
+            </div>
+
             {/* Chat History */}
-            <div className="flex-1 overflow-auto p-4 space-y-4">
+            <div className="flex-1 overflow-auto p-4 space-y-3">
               {chatHistory.length === 0 ? (
                 <div className="text-center text-muted-foreground py-8">
-                  <Wand2 className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                  <p>Ask AI to modify your game</p>
-                  <p className="text-sm mt-1">e.g., "Make the player move faster" or "Add a score counter"</p>
+                  <Wand2 className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                  <p className="font-medium mb-2">让 AI 帮你修改作品</p>
+                  <p className="text-sm text-muted-foreground mb-4">选择上方的技能或输入你的想法</p>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {examplePrompts.map((example, i) => (
+                      <Button
+                        key={i}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setAiPrompt(example)}
+                        className="text-xs"
+                      >
+                        {example}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
               ) : (
                 chatHistory.map((msg, i) => (
                   <div
                     key={i}
-                    className={`p-3 rounded-lg ${
+                    className={`p-3 rounded-xl ${
                       msg.role === 'user'
                         ? 'bg-primary text-primary-foreground ml-8'
                         : 'bg-muted mr-8'
                     }`}
                   >
                     <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                    {msg.role === 'ai' && msg.previousCode && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleUndo(msg.previousCode!)}
+                        className="mt-2 h-7 text-xs gap-1 opacity-70 hover:opacity-100"
+                      >
+                        <Undo2 className="w-3 h-3" />
+                        撤销这次修改
+                      </Button>
+                    )}
                   </div>
                 ))
               )}
               {isGenerating && (
-                <div className="flex items-center gap-2 text-muted-foreground">
+                <div className="flex items-center gap-2 text-muted-foreground p-3">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>AI is thinking...</span>
+                  <span>AI 正在思考...</span>
                 </div>
               )}
+              <div ref={chatEndRef} />
             </div>
 
             {/* Input */}
-            <div className="border-t p-4">
+            <div className="border-t p-4 bg-background">
               <div className="flex gap-2">
                 <Textarea
                   value={aiPrompt}
                   onChange={(e) => setAiPrompt(e.target.value)}
-                  placeholder="Describe what you want to change..."
-                  className="min-h-[80px] resize-none"
+                  placeholder="描述你想要的修改..."
+                  className="min-h-[60px] max-h-[120px] resize-none"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
@@ -262,18 +330,18 @@ const SplitEditor = ({ code, prompt, onCodeChange, creationId }: SplitEditorProp
               </div>
               <Button 
                 className="w-full mt-2" 
-                onClick={handleAIModify}
+                onClick={() => handleAIModify()}
                 disabled={!aiPrompt.trim() || isGenerating}
               >
                 {isGenerating ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Generating...
+                    生成中...
                   </>
                 ) : (
                   <>
                     <Wand2 className="w-4 h-4 mr-2" />
-                    Apply Changes
+                    应用修改
                   </>
                 )}
               </Button>
