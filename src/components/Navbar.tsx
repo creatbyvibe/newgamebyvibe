@@ -53,6 +53,12 @@ const Navbar = () => {
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-8">
               <a
+                href="/inspiration"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                灵感库
+              </a>
+              <a
                 href="#explore"
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
@@ -119,6 +125,12 @@ const Navbar = () => {
           {isMobileMenuOpen && (
             <div className="md:hidden py-4 border-t border-border animate-fade-in bg-background">
               <div className="flex flex-col gap-4">
+                <a
+                  href="/inspiration"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2"
+                >
+                  灵感库
+                </a>
                 <a
                   href="#explore"
                   className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2"
