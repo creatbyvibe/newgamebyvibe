@@ -3,14 +3,12 @@ import Navbar from "@/components/Navbar";
 import AICreator from "@/components/AICreator";
 import WorkGallery from "@/components/WorkGallery";
 import {
-  Gamepad2,
-  Timer,
-  Palette,
   Sparkles,
   Github,
   Twitter,
   ArrowRight,
   FlaskConical,
+  Wand2,
   Zap,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -49,19 +47,18 @@ const Index = () => {
     <div className="min-h-screen bg-background overflow-hidden">
       <Navbar />
 
-      {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center px-6 pt-24 pb-16">
+      {/* Hero Section - More Compact */}
+      <section className="relative flex items-center justify-center px-6 pt-24 pb-12">
         {/* Background decorations */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-20 left-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
           <div className="absolute top-40 right-20 w-96 h-96 bg-secondary/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-20 left-1/3 w-80 h-80 bg-accent/5 rounded-full blur-3xl" />
         </div>
 
         <div className="relative z-10 w-full max-w-4xl mx-auto">
-          <div className="flex flex-col items-center text-center mb-12">
+          <div className="flex flex-col items-center text-center mb-8">
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 bg-primary/10 rounded-full px-4 py-1.5 mb-6 animate-fade-in">
+            <div className="inline-flex items-center gap-2 bg-primary/10 rounded-full px-4 py-1.5 mb-4 animate-fade-in">
               <Sparkles className="w-3.5 h-3.5 text-primary" />
               <span className="text-sm font-medium text-primary tracking-wide">
                 用 AI 创造一切
@@ -76,7 +73,7 @@ const Index = () => {
 
             {/* Subtitle */}
             <p
-              className="text-lg text-muted-foreground max-w-md mt-6 animate-fade-in"
+              className="text-lg text-muted-foreground max-w-md mt-4 animate-fade-in"
               style={{ animationDelay: "200ms" }}
             >
               几分钟内将创意变成游戏和工具。
@@ -91,34 +88,65 @@ const Index = () => {
           >
             <AICreator />
           </div>
+        </div>
+      </section>
 
-          {/* Stats */}
-          <div
-            className="flex items-center justify-center gap-10 mt-16 animate-fade-in"
-            style={{ animationDelay: "400ms" }}
-          >
-            <div className="text-center">
-              <div className="text-2xl font-bold text-foreground">50k+</div>
-              <div className="text-sm text-muted-foreground mt-1">作品</div>
+      {/* Dual Entry Cards */}
+      <section className="py-8 px-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Free Creation Card */}
+            <div
+              onClick={() => navigate('/inspiration')}
+              className="group relative rounded-2xl bg-gradient-to-br from-primary/5 to-secondary/5 border border-primary/20 p-6 cursor-pointer hover:border-primary/40 transition-all hover:-translate-y-1"
+            >
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shrink-0">
+                  <Wand2 className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-display text-lg font-semibold text-foreground mb-1">自由创作</h3>
+                  <p className="text-sm text-muted-foreground">
+                    输入任何想法，AI 帮你实现。从模板开始或完全自由发挥。
+                  </p>
+                </div>
+                <ArrowRight className="w-5 h-5 text-primary opacity-0 group-hover:opacity-100 transition-all transform translate-x-0 group-hover:translate-x-1" />
+              </div>
             </div>
-            <div className="w-px h-10 bg-border" />
-            <div className="text-center">
-              <div className="text-2xl font-bold text-foreground">10k+</div>
-              <div className="text-sm text-muted-foreground mt-1">创作者</div>
-            </div>
-            <div className="w-px h-10 bg-border" />
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">∞</div>
-              <div className="text-sm text-muted-foreground mt-1">可能性</div>
+
+            {/* Game Lab Card */}
+            <div
+              onClick={() => navigate('/game-lab')}
+              className="group relative rounded-2xl bg-gradient-to-br from-purple-500/5 to-pink-500/5 border border-purple-500/20 p-6 cursor-pointer hover:border-purple-500/40 transition-all hover:-translate-y-1"
+            >
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shrink-0">
+                  <FlaskConical className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-display text-lg font-semibold text-foreground">游戏实验室</h3>
+                    <span className="px-2 py-0.5 text-xs bg-purple-500/20 text-purple-600 rounded-full">新</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    融合多种游戏类型，创造独一无二的玩法。
+                  </p>
+                </div>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                  <span className="text-lg">🐍</span>
+                  <Zap className="w-3 h-3 text-yellow-500" />
+                  <span className="text-lg">🧱</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Featured Templates Section */}
-      <section className="py-16 px-6 bg-muted/30">
+      <section className="py-12 px-6 bg-muted/30">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="font-display text-xl text-foreground">精选模板</h2>
               <p className="text-sm text-muted-foreground mt-1">快速开始你的创作</p>
@@ -128,7 +156,7 @@ const Index = () => {
               className="gap-2"
               onClick={() => navigate('/inspiration')}
             >
-              查看全部 30+ 模板
+              查看全部
               <ArrowRight className="w-4 h-4" />
             </Button>
           </div>
@@ -164,48 +192,15 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Game Lab CTA */}
-      <section className="py-16 px-6">
-        <div className="max-w-4xl mx-auto">
-          <div 
-            onClick={() => navigate('/game-lab')}
-            className="relative rounded-2xl bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-orange-500/10 border border-purple-500/20 p-8 cursor-pointer hover:border-purple-500/40 transition-all group"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                  <FlaskConical className="w-7 h-7 text-white" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-display text-xl font-semibold">游戏实验室</h3>
-                    <span className="px-2 py-0.5 text-xs bg-purple-500/20 text-purple-600 rounded-full">新功能</span>
-                  </div>
-                  <p className="text-muted-foreground">
-                    选择多个游戏类型，让 AI 创造前所未有的融合游戏
-                  </p>
-                </div>
-              </div>
-              <div className="hidden sm:flex items-center gap-3">
-                <div className="flex items-center text-2xl">
-                  🐍 <Zap className="w-4 h-4 text-yellow-500 mx-1" /> 🧱
-                </div>
-                <ArrowRight className="w-5 h-5 text-primary group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Gallery Section */}
-      <section id="gallery" className="py-24 px-6">
+      <section className="py-16 px-6">
         <div className="max-w-5xl mx-auto">
           <WorkGallery />
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 px-6">
+      <section className="py-16 px-6">
         <div className="max-w-2xl mx-auto">
           <div className="relative rounded-3xl overflow-hidden shadow-medium">
             <div className="absolute inset-0 gradient-fun" />
@@ -215,7 +210,7 @@ const Index = () => {
                 准备好创造有趣的东西了吗?
               </h2>
               <p className="text-white/80 mb-8 max-w-sm mx-auto text-base">
-                加入 10,000+ 创作者，将创意变为现实
+                加入创作者社区，将创意变为现实
               </p>
               <Button
                 size="lg"
@@ -231,7 +226,7 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-16 px-6 border-t border-border bg-muted/20">
+      <footer className="py-12 px-6 border-t border-border bg-muted/20">
         <div className="max-w-5xl mx-auto">
           <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-8">
             {/* Logo */}
@@ -252,22 +247,22 @@ const Index = () => {
             {/* Links */}
             <div className="flex items-center gap-8">
               <a
-                href="#"
+                href="/inspiration"
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                关于
+                灵感库
               </a>
               <a
-                href="#"
+                href="/game-lab"
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                帮助
+                游戏实验室
               </a>
               <a
-                href="#"
+                href="/community"
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                隐私
+                社区
               </a>
             </div>
 
@@ -288,7 +283,7 @@ const Index = () => {
             </div>
           </div>
 
-          <div className="mt-12 pt-8 border-t border-border text-center">
+          <div className="mt-8 pt-6 border-t border-border text-center">
             <p className="text-sm text-muted-foreground">
               © 2024 byvibe.ai. All rights reserved.
             </p>

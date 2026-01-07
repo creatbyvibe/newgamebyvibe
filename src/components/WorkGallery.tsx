@@ -139,15 +139,15 @@ const WorkGallery = ({ showPublicOnly = true }: WorkGalleryProps) => {
         <div>
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp className="w-5 h-5 text-primary" />
-            <span className="text-sm font-medium text-primary">Trending</span>
+            <span className="text-sm font-medium text-primary">热门</span>
           </div>
-          <h2 className="font-display text-foreground">Community Creations</h2>
+          <h2 className="font-display text-foreground">社区作品</h2>
           <p className="text-muted-foreground mt-2">
-            Discover and play games built by our community
+            发现并体验社区创作者的游戏
           </p>
         </div>
-        <a href="#gallery" className="text-sm text-primary hover:underline font-medium">
-          View all →
+        <a href="/community" className="text-sm text-primary hover:underline font-medium">
+          查看全部 →
         </a>
       </div>
 
