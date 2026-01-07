@@ -10,6 +10,8 @@ import {
   Github,
   Twitter,
   ArrowRight,
+  FlaskConical,
+  Zap,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -158,6 +160,39 @@ const Index = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Game Lab CTA */}
+      <section className="py-16 px-6">
+        <div className="max-w-4xl mx-auto">
+          <div 
+            onClick={() => navigate('/game-lab')}
+            className="relative rounded-2xl bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-orange-500/10 border border-purple-500/20 p-8 cursor-pointer hover:border-purple-500/40 transition-all group"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                  <FlaskConical className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-display text-xl font-semibold">游戏实验室</h3>
+                    <span className="px-2 py-0.5 text-xs bg-purple-500/20 text-purple-600 rounded-full">新功能</span>
+                  </div>
+                  <p className="text-muted-foreground">
+                    选择多个游戏类型，让 AI 创造前所未有的融合游戏
+                  </p>
+                </div>
+              </div>
+              <div className="hidden sm:flex items-center gap-3">
+                <div className="flex items-center text-2xl">
+                  🐍 <Zap className="w-4 h-4 text-yellow-500 mx-1" /> 🧱
+                </div>
+                <ArrowRight className="w-5 h-5 text-primary group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
           </div>
         </div>
       </section>

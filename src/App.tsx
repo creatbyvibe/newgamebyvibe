@@ -9,6 +9,7 @@ import MyCreations from "./pages/MyCreations";
 import CreationPage from "./pages/CreationPage";
 import Inspiration from "./pages/Inspiration";
 import StudioPage from "./pages/StudioPage";
+import GameLab from "./pages/GameLab";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +26,7 @@ const App = () => (
             <Route path="/my-creations" element={<MyCreations />} />
             <Route path="/creation/:id" element={<CreationPage />} />
             <Route path="/inspiration" element={<Inspiration />} />
+            <Route path="/game-lab" element={<GameLab />} />
             <Route path="/studio/new" element={<StudioPage />} />
             <Route path="/studio/:id" element={<StudioPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

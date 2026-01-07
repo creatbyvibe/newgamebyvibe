@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.design-assistant]
 verify_jwt = false
+
+[functions.game-lab-fusion]
+verify_jwt = false
