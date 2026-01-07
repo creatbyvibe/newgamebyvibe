@@ -319,9 +319,18 @@ const AICreator = () => {
 
             {/* Bottom bar */}
             <div className="absolute bottom-0 left-0 right-0 p-4 flex items-center justify-between border-t border-border bg-muted/30 rounded-b-2xl">
-              <span className="text-sm text-muted-foreground hidden sm:block">
-                Press Enter to create
-              </span>
+              <div className="text-xs text-muted-foreground hidden sm:flex items-center gap-3">
+                <span className="flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono border border-border">Enter</kbd>
+                  <span>to create</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono border border-border">Shift</kbd>
+                  <span>+</span>
+                  <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono border border-border">Enter</kbd>
+                  <span>new line</span>
+                </span>
+              </div>
               <Button
                 size="sm"
                 className="gap-2"
