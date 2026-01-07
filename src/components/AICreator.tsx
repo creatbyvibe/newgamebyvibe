@@ -400,7 +400,7 @@ const AICreator = ({ initialPrompt = "", showSuggestions = true }: AICreatorProp
                   key={`game-${index}`}
                   onClick={() => handleSuggestionClick(suggestion)}
                   disabled={isGenerating}
-                  className="px-3 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-sm text-primary hover:text-primary transition-all duration-200 border border-primary/20 hover:border-primary/40"
+                  className="px-3 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-sm text-primary hover:text-primary transition-all duration-200 border border-primary/20 hover:border-primary/40 focus:outline-none focus:ring-0"
                 >
                   {suggestion}
                 </button>
@@ -413,7 +413,7 @@ const AICreator = ({ initialPrompt = "", showSuggestions = true }: AICreatorProp
                   key={`other-${index}`}
                   onClick={() => handleSuggestionClick(suggestion)}
                   disabled={isGenerating}
-                  className="px-3 py-1.5 rounded-full bg-muted hover:bg-primary/10 text-sm text-muted-foreground hover:text-primary transition-all duration-200 border border-transparent hover:border-primary/20"
+                  className="px-3 py-1.5 rounded-full bg-muted hover:bg-primary/10 text-sm text-muted-foreground hover:text-primary transition-all duration-200 border border-transparent hover:border-primary/20 focus:outline-none focus:ring-0"
                 >
                   {suggestion}
                 </button>
