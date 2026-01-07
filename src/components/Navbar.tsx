@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Zap, Menu, X } from "lucide-react";
+import { Sparkles, Menu, X } from "lucide-react";
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -18,21 +18,18 @@ const Navbar = () => {
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled
-          ? "bg-background/80 backdrop-blur-lg border-b border-border"
+          ? "bg-background/80 backdrop-blur-lg border-b border-border shadow-soft"
           : "bg-transparent"
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg gradient-neon flex items-center justify-center">
-              <span className="text-lg font-bold text-primary-foreground">B</span>
-            </div>
-            <span className="font-display font-bold text-xl text-foreground">
+          {/* Logo - Pure text */}
+          <a href="/" className="flex items-center">
+            <span className="font-display font-bold text-2xl text-gradient-primary">
               ByVibe
             </span>
-          </div>
+          </a>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
@@ -40,27 +37,27 @@ const Navbar = () => {
               href="#explore"
               className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
-              探索
+              Explore
             </a>
             <a
               href="#gallery"
               className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
-              画廊
+              Gallery
             </a>
             <a
               href="#about"
               className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
-              关于
+              About
             </a>
           </div>
 
           {/* CTA Button */}
           <div className="hidden md:flex items-center gap-4">
-            <Button variant="default" size="sm" className="gap-2">
-              <Zap className="w-4 h-4" />
-              开始创作
+            <Button size="sm" className="gap-2">
+              <Sparkles className="w-4 h-4" />
+              Start Creating
             </Button>
           </div>
 
@@ -79,29 +76,29 @@ const Navbar = () => {
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-border animate-fade-in">
+          <div className="md:hidden py-4 border-t border-border animate-fade-in bg-background">
             <div className="flex flex-col gap-4">
               <a
                 href="#explore"
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-2"
               >
-                探索
+                Explore
               </a>
               <a
                 href="#gallery"
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-2"
               >
-                画廊
+                Gallery
               </a>
               <a
                 href="#about"
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-2"
               >
-                关于
+                About
               </a>
-              <Button variant="default" size="sm" className="gap-2 w-full">
-                <Zap className="w-4 h-4" />
-                开始创作
+              <Button size="sm" className="gap-2 w-full">
+                <Sparkles className="w-4 h-4" />
+                Start Creating
               </Button>
             </div>
           </div>

@@ -4,16 +4,16 @@ interface BentoItemProps {
   title: string;
   description: string;
   icon: LucideIcon;
-  gradient: "neon" | "cyber" | "sunset" | "electric";
+  gradient: "primary" | "secondary" | "accent" | "fun";
   size: "small" | "medium" | "large";
   delay?: number;
 }
 
 const gradientStyles = {
-  neon: "gradient-neon",
-  cyber: "gradient-cyber",
-  sunset: "gradient-sunset",
-  electric: "gradient-electric",
+  primary: "gradient-primary",
+  secondary: "gradient-secondary",
+  accent: "gradient-accent",
+  fun: "gradient-fun",
 };
 
 const sizeStyles = {
@@ -32,12 +32,12 @@ export const BentoItem = ({
 }: BentoItemProps) => {
   return (
     <div
-      className={`${sizeStyles[size]} group relative bg-card rounded-2xl p-6 border-2 border-border hover:border-primary/50 transition-all duration-300 cursor-pointer card-brutal animate-fade-in overflow-hidden`}
+      className={`${sizeStyles[size]} group relative bg-card rounded-2xl p-6 border border-border hover:border-primary/30 transition-all duration-300 cursor-pointer hover-lift animate-fade-in overflow-hidden`}
       style={{ animationDelay: `${delay}ms` }}
     >
-      {/* Background glow on hover */}
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300">
-        <div className={`w-full h-full ${gradientStyles[gradient]}`} />
+      {/* Background decoration */}
+      <div className="absolute -top-20 -right-20 w-40 h-40 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-500">
+        <div className={`w-full h-full rounded-full ${gradientStyles[gradient]}`} />
       </div>
 
       {/* Content */}
@@ -46,11 +46,11 @@ export const BentoItem = ({
         <div
           className={`w-12 h-12 rounded-xl ${gradientStyles[gradient]} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}
         >
-          <Icon className="w-6 h-6 text-primary-foreground" />
+          <Icon className="w-6 h-6 text-white" />
         </div>
 
         {/* Text */}
-        <h3 className="text-lg font-display font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
+        <h3 className="text-lg font-display font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
           {title}
         </h3>
         <p className="text-sm text-muted-foreground leading-relaxed">

@@ -10,52 +10,52 @@ import {
   Palette,
   Timer,
   MessageCircle,
-  Zap,
+  Sparkles,
   Github,
   Twitter,
 } from "lucide-react";
 
 const templates = [
   {
-    title: "弹球小游戏",
-    description: "经典弹球，键盘控制，看你能得多少分",
+    title: "Pong Game",
+    description: "Classic arcade game with paddle controls",
     icon: Gamepad2,
-    gradient: "neon" as const,
+    gradient: "primary" as const,
     size: "large" as const,
   },
   {
-    title: "骰子决定器",
-    description: "选择困难？让骰子决定",
+    title: "Decision Dice",
+    description: "Can't decide? Let fate choose",
     icon: Dices,
-    gradient: "cyber" as const,
+    gradient: "secondary" as const,
     size: "small" as const,
   },
   {
-    title: "节拍器",
-    description: "练琴练舞必备",
+    title: "Beat Keeper",
+    description: "Metronome for practice sessions",
     icon: Music,
-    gradient: "sunset" as const,
+    gradient: "accent" as const,
     size: "small" as const,
   },
   {
-    title: "表情包生成器",
-    description: "上传图片，添加文字，一键生成",
+    title: "Meme Maker",
+    description: "Create & share custom memes",
     icon: Palette,
-    gradient: "electric" as const,
+    gradient: "fun" as const,
     size: "medium" as const,
   },
   {
-    title: "番茄钟",
-    description: "25分钟专注，高效工作",
+    title: "Pomodoro",
+    description: "25 min focus, 5 min break",
     icon: Timer,
-    gradient: "cyber" as const,
+    gradient: "secondary" as const,
     size: "small" as const,
   },
   {
-    title: "匿名聊天室",
-    description: "临时聊天，聊完即焚",
+    title: "Quick Chat",
+    description: "Temporary chat rooms",
     icon: MessageCircle,
-    gradient: "neon" as const,
+    gradient: "primary" as const,
     size: "small" as const,
   },
 ];
@@ -67,98 +67,83 @@ const Index = () => {
 
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center px-4 pt-20">
-        {/* Background effects */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[120px]" />
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-secondary/10 rounded-full blur-[120px]" />
+        {/* Background decorations */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
+          <div className="absolute top-40 right-20 w-96 h-96 bg-secondary/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-20 left-1/3 w-80 h-80 bg-accent/5 rounded-full blur-3xl" />
         </div>
 
         <div className="relative z-10 w-full max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            {/* Left - Copy */}
-            <div className="text-center lg:text-left">
-              {/* Badge */}
-              <div className="inline-flex items-center gap-2 bg-card rounded-full px-4 py-2 border border-border mb-6 animate-fade-in">
-                <span className="text-xs font-medium text-primary uppercase tracking-wider">
-                  摸鱼神器
-                </span>
-                <span className="text-muted-foreground">•</span>
-                <span className="text-xs text-muted-foreground">
-                  5分钟创造
-                </span>
-              </div>
-
-              {/* Title */}
-              <h1
-                className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-foreground mb-6 animate-fade-in leading-tight"
-                style={{ animationDelay: "100ms" }}
-              >
-                一句话
-                <br />
-                <span className="text-gradient-neon">一个玩具</span>
-              </h1>
-
-              {/* Subtitle */}
-              <p
-                className="text-lg md:text-xl text-muted-foreground mb-8 max-w-md mx-auto lg:mx-0 animate-fade-in"
-                style={{ animationDelay: "200ms" }}
-              >
-                上班无聊？用 ByVibe 把你的想法变成有趣的小游戏、小工具。
-                <span className="text-foreground font-medium">
-                  {" "}
-                  无需代码。
-                </span>
-              </p>
-
-              {/* Quick stats */}
-              <div
-                className="flex items-center justify-center lg:justify-start gap-6 animate-fade-in"
-                style={{ animationDelay: "300ms" }}
-              >
-                <div>
-                  <div className="text-2xl font-bold text-foreground">50k+</div>
-                  <div className="text-xs text-muted-foreground">作品</div>
-                </div>
-                <div className="w-px h-8 bg-border" />
-                <div>
-                  <div className="text-2xl font-bold text-foreground">10k+</div>
-                  <div className="text-xs text-muted-foreground">创作者</div>
-                </div>
-                <div className="w-px h-8 bg-border" />
-                <div>
-                  <div className="text-2xl font-bold text-primary">∞</div>
-                  <div className="text-xs text-muted-foreground">可能性</div>
-                </div>
-              </div>
+          <div className="flex flex-col items-center text-center mb-12">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 bg-primary/10 rounded-full px-4 py-2 mb-8 animate-fade-in">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <span className="text-sm font-medium text-primary">
+                Create anything with AI
+              </span>
             </div>
 
-            {/* Right - AI Creator */}
-            <div
-              className="animate-fade-in"
-              style={{ animationDelay: "400ms" }}
+            {/* Title */}
+            <h1
+              className="text-5xl md:text-6xl lg:text-7xl font-display font-bold text-foreground mb-6 animate-fade-in leading-tight"
+              style={{ animationDelay: "100ms" }}
             >
-              <AICreator />
-            </div>
-          </div>
-        </div>
+              One prompt.
+              <br />
+              <span className="text-gradient-primary">One creation.</span>
+            </h1>
 
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce-subtle">
-          <div className="w-6 h-10 rounded-full border-2 border-muted-foreground/30 flex items-start justify-center p-2">
-            <div className="w-1 h-2 rounded-full bg-primary" />
+            {/* Subtitle */}
+            <p
+              className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl animate-fade-in"
+              style={{ animationDelay: "200ms" }}
+            >
+              Turn your ideas into fun games and tools in minutes.
+              <span className="text-foreground font-medium"> No coding needed.</span>
+            </p>
+          </div>
+
+          {/* AI Creator - Centered */}
+          <div
+            className="flex justify-center animate-fade-in"
+            style={{ animationDelay: "300ms" }}
+          >
+            <AICreator />
+          </div>
+
+          {/* Quick stats */}
+          <div
+            className="flex items-center justify-center gap-8 mt-16 animate-fade-in"
+            style={{ animationDelay: "400ms" }}
+          >
+            <div className="text-center">
+              <div className="text-3xl font-bold text-foreground">50k+</div>
+              <div className="text-sm text-muted-foreground">Creations</div>
+            </div>
+            <div className="w-px h-10 bg-border" />
+            <div className="text-center">
+              <div className="text-3xl font-bold text-foreground">10k+</div>
+              <div className="text-sm text-muted-foreground">Creators</div>
+            </div>
+            <div className="w-px h-10 bg-border" />
+            <div className="text-center">
+              <div className="text-3xl font-bold text-primary">∞</div>
+              <div className="text-sm text-muted-foreground">Possibilities</div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Templates Section */}
-      <section id="explore" className="py-24 px-4">
+      <section id="explore" className="py-24 px-4 bg-muted/30">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
-              从模板开始，<span className="text-gradient-neon">秒变创作者</span>
+              Start from a template
             </h2>
             <p className="text-muted-foreground max-w-xl mx-auto">
-              选择一个模板作为起点，或者直接描述你的想法
+              Pick a starter or describe your own idea
             </p>
           </div>
 
@@ -167,21 +152,21 @@ const Index = () => {
               <BentoItem
                 key={template.title}
                 {...template}
-                delay={index * 100}
+                delay={index * 80}
               />
             ))}
           </BentoGrid>
 
-          <div className="text-center mt-10">
+          <div className="text-center mt-12">
             <Button variant="outline" size="lg" className="gap-2">
-              查看全部 100+ 模板
+              Browse 100+ templates
             </Button>
           </div>
         </div>
       </section>
 
       {/* Gallery Section */}
-      <section id="gallery" className="py-24 px-4 bg-muted/30">
+      <section id="gallery" className="py-24 px-4">
         <div className="max-w-6xl mx-auto">
           <WorkGallery />
         </div>
@@ -190,25 +175,24 @@ const Index = () => {
       {/* CTA Section */}
       <section className="py-24 px-4">
         <div className="max-w-3xl mx-auto">
-          <div className="relative rounded-3xl overflow-hidden">
+          <div className="relative rounded-3xl overflow-hidden shadow-medium">
             {/* Background */}
-            <div className="absolute inset-0 gradient-neon opacity-90" />
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_transparent_0%,_hsl(var(--background))_100%)] opacity-40" />
-
+            <div className="absolute inset-0 gradient-fun" />
+            
             {/* Content */}
-            <div className="relative z-10 p-10 md:p-16 text-center">
-              <h2 className="text-3xl md:text-4xl font-display font-bold text-primary-foreground mb-4">
-                准备好摸鱼了吗？
+            <div className="relative z-10 p-12 md:p-16 text-center">
+              <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-4">
+                Ready to create something fun?
               </h2>
-              <p className="text-primary-foreground/80 mb-8 max-w-md mx-auto">
-                加入 10,000+ 创作者，用 ByVibe 把无聊时间变成创造时间
+              <p className="text-white/80 mb-8 max-w-md mx-auto">
+                Join 10,000+ creators turning ideas into reality
               </p>
               <Button
                 size="lg"
-                className="bg-background text-foreground hover:bg-background/90 gap-2"
+                className="bg-white text-foreground hover:bg-white/90 gap-2 shadow-soft"
               >
-                <Zap className="w-5 h-5 text-primary" />
-                免费开始创作
+                <Sparkles className="w-5 h-5 text-primary" />
+                Start for free
               </Button>
             </div>
           </div>
@@ -216,22 +200,17 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-4 border-t border-border">
+      <footer className="py-12 px-4 border-t border-border bg-muted/20">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg gradient-neon flex items-center justify-center">
-                <span className="text-lg font-bold text-primary-foreground">
-                  B
-                </span>
-              </div>
-              <div>
-                <span className="font-display font-bold text-foreground">
-                  ByVibe
-                </span>
-                <p className="text-xs text-muted-foreground">一句话，一个玩具</p>
-              </div>
+            <div>
+              <span className="font-display font-bold text-2xl text-gradient-primary">
+                ByVibe
+              </span>
+              <p className="text-sm text-muted-foreground mt-1">
+                One prompt, one creation.
+              </p>
             </div>
 
             {/* Links */}
@@ -240,19 +219,19 @@ const Index = () => {
                 href="#"
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                关于
+                About
               </a>
               <a
                 href="#"
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                帮助
+                Help
               </a>
               <a
                 href="#"
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                隐私
+                Privacy
               </a>
             </div>
 
@@ -260,13 +239,13 @@ const Index = () => {
             <div className="flex items-center gap-4">
               <a
                 href="#"
-                className="p-2 rounded-lg hover:bg-muted transition-colors"
+                className="p-2 rounded-xl hover:bg-muted transition-colors"
               >
                 <Twitter className="w-5 h-5 text-muted-foreground" />
               </a>
               <a
                 href="#"
-                className="p-2 rounded-lg hover:bg-muted transition-colors"
+                className="p-2 rounded-xl hover:bg-muted transition-colors"
               >
                 <Github className="w-5 h-5 text-muted-foreground" />
               </a>
