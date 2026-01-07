@@ -46,6 +46,7 @@ const CreationEditor = ({
   const isMobile = useIsMobile();
   const [code, setCode] = useState(initialCode);
   const [previewCode, setPreviewCode] = useState(initialCode);
+  const [previewNonce, setPreviewNonce] = useState(0);
   const [title, setTitle] = useState("");
   const [isPublic, setIsPublic] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(true);
@@ -63,6 +64,12 @@ const CreationEditor = ({
       setPreviewCode(initialCode);
     }
   }, [initialCode]);
+
+  // Force iframe to remount whenever previewCode changes (avoids occasional blank srcDoc rendering)
+  useEffect(() => {
+    setPreviewNonce((n) => n + 1);
+    console.log("[CreationEditor] previewCode updated", { length: previewCode?.length ?? 0 });
+  }, [previewCode]);
 
   useEffect(() => {
     const words = prompt.split(" ").slice(0, 4).join(" ");
@@ -396,6 +403,7 @@ const CreationEditor = ({
                 {/* Preview */}
                 <div className="h-1/2 md:h-full md:w-1/2 bg-white">
                   <iframe
+                    key={previewNonce}
                     ref={iframeRef}
                     srcDoc={previewCode}
                     className="w-full h-full border-0"
@@ -407,6 +415,7 @@ const CreationEditor = ({
             ) : (
               <div className="flex-1 bg-white">
                 <iframe
+                  key={previewNonce}
                   ref={iframeRef}
                   srcDoc={previewCode}
                   className="w-full h-full border-0"
