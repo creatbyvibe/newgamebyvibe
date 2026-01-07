@@ -19,10 +19,31 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
 
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePassword = (password: string) => {
+    return password.length >= 6;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // 验证输入
     if (!email.trim() || !password.trim()) {
-      toast.error("Please fill in all fields");
+      toast.error("请填写所有字段");
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      toast.error("请输入有效的邮箱地址");
+      return;
+    }
+
+    if (!isLogin && !validatePassword(password)) {
+      toast.error("密码至少需要 6 个字符");
       return;
     }
     
@@ -33,9 +54,24 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
         : await signUp(email, password);
       
       if (error) {
-        toast.error(error.message);
+        // 将常见错误信息中文化
+        let errorMessage = error.message;
+        if (error.message.includes("Invalid login credentials")) {
+          errorMessage = "邮箱或密码错误";
+        } else if (error.message.includes("User already registered")) {
+          errorMessage = "该邮箱已被注册";
+        } else if (error.message.includes("Email not confirmed")) {
+          errorMessage = "请先验证您的邮箱";
+        } else if (error.message.includes("Password")) {
+          errorMessage = "密码格式不正确";
+        }
+        toast.error(errorMessage);
       } else {
-        toast.success(isLogin ? "Welcome back!" : "Account created!");
+        if (isLogin) {
+          toast.success("欢迎回来！");
+        } else {
+          toast.success("账户创建成功！请检查邮箱验证链接");
+        }
         onOpenChange(false);
         setEmail("");
         setPassword("");
@@ -53,17 +89,17 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
             <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-primary-foreground" />
             </div>
-            {isLogin ? "Welcome Back" : "Join byvibe.ai"}
+            {isLogin ? "欢迎回来" : "加入 byvibe.ai"}
           </DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">邮箱</Label>
             <Input
               id="email"
               type="email"
-              placeholder="you@example.com"
+              placeholder="your@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
@@ -71,31 +107,36 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">密码</Label>
             <Input
               id="password"
               type="password"
-              placeholder="••••••••"
+              placeholder="至少 6 个字符"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
             />
+            {!isLogin && (
+              <p className="text-xs text-muted-foreground">
+                密码至少需要 6 个字符
+              </p>
+            )}
           </div>
           
           <Button type="submit" className="w-full gap-2" disabled={loading}>
             {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-            {isLogin ? "Sign In" : "Create Account"}
+            {isLogin ? "登录" : "创建账户"}
           </Button>
         </form>
         
         <div className="text-center text-sm text-muted-foreground mt-4">
-          {isLogin ? "Don't have an account?" : "Already have an account?"}
+          {isLogin ? "还没有账户？" : "已有账户？"}
           <button
             type="button"
             onClick={() => setIsLogin(!isLogin)}
             className="text-primary hover:underline ml-1 font-medium"
           >
-            {isLogin ? "Sign up" : "Sign in"}
+            {isLogin ? "立即注册" : "立即登录"}
           </button>
         </div>
       </DialogContent>

@@ -74,7 +74,7 @@ const CreationPage = () => {
 
       if (error) throw error;
       if (!data) {
-        toast.error("Creation not found");
+        toast.error("作品未找到");
         navigate("/");
         return;
       }
@@ -94,7 +94,7 @@ const CreationPage = () => {
       }
     } catch (error) {
       console.error("Error fetching creation:", error);
-      toast.error("Failed to load creation");
+      toast.error("加载作品失败");
     } finally {
       setLoading(false);
     }
@@ -132,7 +132,7 @@ const CreationPage = () => {
 
   const handleLike = async () => {
     if (!user) {
-      toast.error("Please sign in to like");
+      toast.error("请先登录");
       return;
     }
 
@@ -160,7 +160,7 @@ const CreationPage = () => {
 
   const handleBookmark = async () => {
     if (!user) {
-      toast.error("Please sign in to bookmark");
+      toast.error("请先登录");
       return;
     }
 
@@ -172,14 +172,14 @@ const CreationPage = () => {
           .eq("user_id", user.id)
           .eq("creation_id", id);
         setIsBookmarked(false);
-        toast.success("Removed from bookmarks");
+        toast.success("已取消收藏");
       } else {
         await supabase.from("bookmarks").insert({
           user_id: user.id,
           creation_id: id,
         });
         setIsBookmarked(true);
-        toast.success("Added to bookmarks");
+        toast.success("已添加收藏");
       }
     } catch (error) {
       console.error("Error toggling bookmark:", error);
@@ -199,7 +199,7 @@ const CreationPage = () => {
   }
 
   const shareUrl = `${window.location.origin}/creation/${creation.id}`;
-  const shareText = `Check out "${creation.title}" on byvibe.ai! 🎮✨`;
+  const shareText = `来看看我在 byvibe.ai 上创作的 "${creation.title}"！🎮✨`;
 
   return (
     <div className="min-h-screen bg-background">
@@ -235,7 +235,7 @@ const CreationPage = () => {
             className="gap-2 mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back
+            返回
           </Button>
 
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
@@ -253,12 +253,12 @@ const CreationPage = () => {
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
                     <User className="w-4 h-4 text-white" />
                   </div>
-                  <span>{profile?.username?.split("@")[0] || "Creator"}</span>
+                  <span>{profile?.username || "创作者"}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
                   <span>
-                    {new Date(creation.created_at).toLocaleDateString()}
+                    {new Date(creation.created_at).toLocaleDateString('zh-CN')}
                   </span>
                 </div>
               </div>
@@ -287,7 +287,7 @@ const CreationPage = () => {
                 <Bookmark
                   className={`w-4 h-4 ${isBookmarked ? "fill-current" : ""}`}
                 />
-                Save
+                收藏
               </Button>
 
               <ShareButtons url={shareUrl} title={creation.title} text={shareText} />
@@ -303,11 +303,11 @@ const CreationPage = () => {
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Eye className="w-4 h-4" />
-                  {creation.plays.toLocaleString()} plays
+                  {creation.plays.toLocaleString()} 次游玩
                 </span>
                 <span className="flex items-center gap-1">
                   <Heart className="w-4 h-4" />
-                  {likeCount} likes
+                  {likeCount} 个赞
                 </span>
               </div>
               <Button
@@ -317,7 +317,7 @@ const CreationPage = () => {
                 className="gap-2"
               >
                 <Maximize2 className="w-4 h-4" />
-                Fullscreen
+                全屏
               </Button>
             </div>
 
@@ -337,7 +337,7 @@ const CreationPage = () => {
         <div className="max-w-5xl mx-auto px-6 mt-8">
           <div className="bg-muted/30 rounded-2xl p-6 border border-border">
             <h3 className="font-display font-semibold text-foreground mb-4">
-              Share this creation
+              分享这个作品
             </h3>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <div className="flex-1 w-full">
@@ -353,10 +353,10 @@ const CreationPage = () => {
                     size="sm"
                     onClick={() => {
                       navigator.clipboard.writeText(shareUrl);
-                      toast.success("Link copied!");
+                      toast.success("链接已复制！");
                     }}
                   >
-                    Copy
+                    复制
                   </Button>
                 </div>
               </div>
@@ -370,7 +370,7 @@ const CreationPage = () => {
           <div className="flex items-center gap-2 mb-6">
             <MessageCircle className="w-5 h-5 text-primary" />
             <h2 className="font-display font-semibold text-xl text-foreground">
-              Reviews & Comments
+              评论与反馈
             </h2>
           </div>
           <CommentsSection creationId={creation.id} />

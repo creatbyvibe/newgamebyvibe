@@ -76,8 +76,8 @@ const Index = () => {
               className="text-lg text-muted-foreground max-w-md mt-4 animate-fade-in"
               style={{ animationDelay: "200ms" }}
             >
-              几分钟内将创意变成游戏和工具。
-              <span className="text-foreground font-medium">无需编程。</span>
+              用 AI 将你的想法变成可玩的游戏和实用工具。
+              <span className="text-foreground font-medium">无需编程，立即开始。</span>
             </p>
           </div>
 
@@ -240,7 +240,7 @@ const Index = () => {
                 </span>
               </div>
               <p className="text-sm text-muted-foreground mt-2">
-                随心创造，分享快乐
+                用 AI 创造一切，分享你的创意
               </p>
             </div>
 
@@ -269,14 +269,20 @@ const Index = () => {
             {/* Social */}
             <div className="flex items-center gap-3">
               <a
-                href="#"
+                href="https://twitter.com/byvibe_ai"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="p-2.5 rounded-xl hover:bg-muted transition-colors"
+                aria-label="Twitter"
               >
                 <Twitter className="w-5 h-5 text-muted-foreground" />
               </a>
               <a
-                href="#"
+                href="https://github.com/creatbyvibe"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="p-2.5 rounded-xl hover:bg-muted transition-colors"
+                aria-label="GitHub"
               >
                 <Github className="w-5 h-5 text-muted-foreground" />
               </a>
@@ -285,7 +291,7 @@ const Index = () => {
 
           <div className="mt-8 pt-6 border-t border-border text-center">
             <p className="text-sm text-muted-foreground">
-              © 2024 byvibe.ai. All rights reserved.
+              © 2025 byvibe.ai. 保留所有权利。
             </p>
           </div>
         </div>

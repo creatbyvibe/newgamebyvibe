@@ -272,7 +272,7 @@ const Community = () => {
                       </h4>
                       <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                         <User className="w-3 h-3" />
-                        创作者
+                        {work.user_id ? "社区创作者" : "匿名用户"}
                       </p>
                     </div>
                   </div>
