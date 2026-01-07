@@ -375,7 +375,7 @@ const AICreator = ({ initialPrompt = "", showSuggestions = true }: AICreatorProp
                 <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono border border-border">Ctrl</kbd>
                 <span>+</span>
                 <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono border border-border">Enter</kbd>
-                <span className="ml-1">to create</span>
+                <span className="ml-1">开始创作</span>
               </div>
               <Button
                 size="sm"
@@ -383,7 +383,7 @@ const AICreator = ({ initialPrompt = "", showSuggestions = true }: AICreatorProp
                 disabled={!input.trim() || isGenerating}
                 onClick={handleCreate}
               >
-                Create
+                创作
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </div>
