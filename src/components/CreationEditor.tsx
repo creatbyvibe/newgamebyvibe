@@ -56,6 +56,14 @@ const CreationEditor = ({
   const [aiLoading, setAiLoading] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
+  // Sync code when initialCode changes (e.g., after AI generation)
+  useEffect(() => {
+    if (initialCode) {
+      setCode(initialCode);
+      setPreviewCode(initialCode);
+    }
+  }, [initialCode]);
+
   useEffect(() => {
     const words = prompt.split(" ").slice(0, 4).join(" ");
     setTitle(words.charAt(0).toUpperCase() + words.slice(1));
