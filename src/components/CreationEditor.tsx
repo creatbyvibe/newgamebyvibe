@@ -76,6 +76,77 @@ const CreationEditor = ({
     setTitle(words.charAt(0).toUpperCase() + words.slice(1));
   }, [prompt]);
 
+  // Handle messages from iframe (for cloud save functionality)
+  useEffect(() => {
+    const handleMessage = async (event: MessageEvent) => {
+      if (!event.data?.type) return;
+      
+      const { type, data } = event.data;
+      
+      if (type === 'GAME_SAVE' && user && creationId) {
+        try {
+          const response = await supabase.functions.invoke('game-save', {
+            body: {
+              action: 'save',
+              creationId,
+              saveSlot: data?.slot || 1,
+              saveData: data?.saveData || data,
+              saveName: data?.name || 'Auto Save',
+            },
+          });
+          
+          if (response.error) throw response.error;
+          
+          // Notify game of successful save
+          iframeRef.current?.contentWindow?.postMessage(
+            { type: 'GAME_SAVE_SUCCESS', slot: data?.slot || 1 },
+            '*'
+          );
+          toast.success('游戏已保存到云端');
+        } catch (error) {
+          console.error('Cloud save error:', error);
+          iframeRef.current?.contentWindow?.postMessage(
+            { type: 'GAME_SAVE_ERROR', error: 'Save failed' },
+            '*'
+          );
+        }
+      }
+      
+      if (type === 'GAME_LOAD_REQUEST' && user && creationId) {
+        try {
+          const response = await supabase.functions.invoke('game-save', {
+            body: {
+              action: 'load',
+              creationId,
+              saveSlot: data?.slot || 1,
+            },
+          });
+          
+          if (response.error) throw response.error;
+          
+          // Send save data back to game
+          iframeRef.current?.contentWindow?.postMessage(
+            { 
+              type: 'GAME_LOAD_RESPONSE', 
+              saveData: response.data?.save?.save_data || null,
+              slot: data?.slot || 1,
+            },
+            '*'
+          );
+        } catch (error) {
+          console.error('Cloud load error:', error);
+          iframeRef.current?.contentWindow?.postMessage(
+            { type: 'GAME_LOAD_RESPONSE', saveData: null, error: 'Load failed' },
+            '*'
+          );
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [user, creationId]);
+
   const handleRun = () => {
     setPreviewCode(code);
     toast.success("Preview updated!");

@@ -1,1 +1,13 @@
 project_id = "oxuzepkyeknogqwktgha"
+
+[functions.generate-creation]
+verify_jwt = false
+
+[functions.ai-code-assist]
+verify_jwt = false
+
+[functions.game-save]
+verify_jwt = false
+
+[functions.design-assistant]
+verify_jwt = false

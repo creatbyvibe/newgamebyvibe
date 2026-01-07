@@ -152,6 +152,47 @@ export type Database = {
         }
         Relationships: []
       }
+      game_saves: {
+        Row: {
+          created_at: string
+          creation_id: string
+          id: string
+          save_data: Json
+          save_name: string | null
+          save_slot: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          creation_id: string
+          id?: string
+          save_data?: Json
+          save_name?: string | null
+          save_slot?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          creation_id?: string
+          id?: string
+          save_data?: Json
+          save_name?: string | null
+          save_slot?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_saves_creation_id_fkey"
+            columns: ["creation_id"]
+            isOneToOne: false
+            referencedRelation: "creations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
