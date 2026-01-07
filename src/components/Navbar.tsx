@@ -59,22 +59,16 @@ const Navbar = () => {
                 灵感库
               </a>
               <a
-                href="#explore"
+                href="/game-lab"
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
-                Explore
+                游戏实验室
               </a>
               <a
-                href="#gallery"
+                href="/community"
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
-                Gallery
-              </a>
-              <a
-                href="#about"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                About
+                社区
               </a>
             </div>
 
@@ -90,23 +84,23 @@ const Navbar = () => {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem asChild>
-                      <a href="/my-creations">My Creations</a>
+                      <a href="/my-creations">我的创作</a>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                       <LogOut className="w-4 h-4 mr-2" />
-                      Sign out
+                      退出
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
                 <>
                   <Button variant="ghost" size="sm" onClick={() => setShowAuthModal(true)}>
-                    Sign in
+                    登录
                   </Button>
                   <Button size="sm" className="gap-2" onClick={() => setShowAuthModal(true)}>
                     <Sparkles className="w-4 h-4" />
-                    Start Creating
+                    开始创作
                   </Button>
                 </>
               )}
@@ -132,22 +126,16 @@ const Navbar = () => {
                   灵感库
                 </a>
                 <a
-                  href="#explore"
+                  href="/game-lab"
                   className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2"
                 >
-                  Explore
+                  游戏实验室
                 </a>
                 <a
-                  href="#gallery"
+                  href="/community"
                   className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2"
                 >
-                  Gallery
-                </a>
-                <a
-                  href="#about"
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2"
-                >
-                  About
+                  社区
                 </a>
                 {user ? (
                   <>
@@ -155,17 +143,17 @@ const Navbar = () => {
                       href="/my-creations"
                       className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2"
                     >
-                      My Creations
+                      我的创作
                     </a>
                     <Button variant="outline" size="sm" onClick={handleSignOut} className="gap-2">
                       <LogOut className="w-4 h-4" />
-                      Sign out
+                      退出
                     </Button>
                   </>
                 ) : (
                   <Button size="sm" className="gap-2 w-full mt-2" onClick={() => setShowAuthModal(true)}>
                     <Sparkles className="w-4 h-4" />
-                    Start Creating
+                    开始创作
                   </Button>
                 )}
               </div>
