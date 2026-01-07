@@ -6,11 +6,28 @@ import { useAuth } from "@/hooks/useAuth";
 import AuthModal from "./AuthModal";
 import CreationEditor from "./CreationEditor";
 
-const suggestions = [
-  "A bouncing ball game",
-  "Random decision maker",
-  "Meme generator",
-  "Focus timer",
+// Game-focused suggestions to inspire creativity
+const gameSuggestions = [
+  "🎮 Pac-Man style maze game",
+  "🔨 Whac-A-Mole game",
+  "🎲 Dice rolling game",
+  "🐍 Snake game",
+  "🏓 Pong game",
+  "🧩 Memory matching game",
+];
+
+const toolSuggestions = [
+  "⏱️ Pomodoro timer",
+  "🎯 Random picker wheel",
+  "📝 Todo list",
+  "🎨 Drawing canvas",
+];
+
+const weirderSuggestions = [
+  "🌈 Mood ring simulator",
+  "🔮 Fortune teller",
+  "👾 Pixel art pet",
+  "🎵 Beat maker",
 ];
 
 const loadingSteps = [
@@ -311,7 +328,7 @@ const AICreator = () => {
                   onFocus={() => setIsFocused(true)}
                   onBlur={() => setIsFocused(false)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Describe what you want to create..."
+                  placeholder="描述你想创建的游戏或工具... 例如：一个贪吃蛇游戏"
                   className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground resize-none outline-none text-base min-h-[70px]"
                   rows={2}
                   disabled={isGenerating}
@@ -342,19 +359,35 @@ const AICreator = () => {
           </div>
         )}
 
-        {/* Suggestions */}
+        {/* Suggestions - Categorized */}
         {!isGenerating && (
-          <div className="mt-5 flex flex-wrap gap-2 justify-center animate-fade-in">
-            {suggestions.map((suggestion, index) => (
-              <button
-                key={index}
-                onClick={() => handleSuggestionClick(suggestion)}
-                disabled={isGenerating}
-                className="px-4 py-2 rounded-full bg-muted hover:bg-primary/10 text-sm text-muted-foreground hover:text-primary transition-all duration-200 border border-transparent hover:border-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {suggestion}
-              </button>
-            ))}
+          <div className="mt-5 space-y-3 animate-fade-in">
+            {/* Games */}
+            <div className="flex flex-wrap gap-2 justify-center">
+              {gameSuggestions.map((suggestion, index) => (
+                <button
+                  key={`game-${index}`}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  disabled={isGenerating}
+                  className="px-3 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-sm text-primary hover:text-primary transition-all duration-200 border border-primary/20 hover:border-primary/40"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+            {/* Tools & Weird stuff */}
+            <div className="flex flex-wrap gap-2 justify-center">
+              {[...toolSuggestions, ...weirderSuggestions].map((suggestion, index) => (
+                <button
+                  key={`other-${index}`}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  disabled={isGenerating}
+                  className="px-3 py-1.5 rounded-full bg-muted hover:bg-primary/10 text-sm text-muted-foreground hover:text-primary transition-all duration-200 border border-transparent hover:border-primary/20"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>

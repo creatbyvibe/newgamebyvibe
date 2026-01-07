@@ -166,12 +166,21 @@ const CreationEditor = ({
   };
 
   const quickActions = [
-    { label: "🎨 Colors", prompt: "Change the color scheme to something more vibrant and modern" },
-    { label: "✨ Animate", prompt: "Add smooth animations and transitions" },
-    { label: "📱 Mobile", prompt: "Make it fully responsive for mobile devices" },
-    { label: "🔊 Sounds", prompt: "Add sound effects for interactions" },
-    { label: "🌙 Dark", prompt: "Add a dark mode option" },
-    { label: "🎮 Fun", prompt: "Make it more fun and engaging" },
+    // Game mechanics
+    { label: "🏆 Score", prompt: "Add a scoring system that tracks points" },
+    { label: "❤️ Lives", prompt: "Add a lives/health system with game over" },
+    { label: "⏱️ Timer", prompt: "Add a countdown timer challenge" },
+    { label: "📈 Levels", prompt: "Add difficulty levels that increase over time" },
+    // Visual & Audio
+    { label: "✨ Animate", prompt: "Add smooth animations and visual effects" },
+    { label: "🔊 Sounds", prompt: "Add sound effects for actions and events" },
+    { label: "🎨 Colors", prompt: "Make the colors more vibrant and appealing" },
+    { label: "🌙 Dark", prompt: "Add dark mode toggle" },
+    // Gameplay
+    { label: "👾 Enemies", prompt: "Add enemies or obstacles to avoid" },
+    { label: "💎 Items", prompt: "Add collectible items and power-ups" },
+    { label: "🎯 Goals", prompt: "Add clear goals and win conditions" },
+    { label: "📱 Mobile", prompt: "Optimize for touch controls on mobile" },
   ];
 
   // AI Panel Content (reusable for both desktop sidebar and mobile sheet)
