@@ -132,11 +132,11 @@ const MyCreations = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <main className="pt-24 pb-16 px-6">
+      <main className="pt-20 sm:pt-24 pb-16 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto">
-          <div className="mb-8">
-            <h1 className="font-display text-3xl font-bold text-foreground">Game Center</h1>
-            <p className="text-muted-foreground mt-2">
+          <div className="mb-6 sm:mb-8">
+            <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground">Game Center</h1>
+            <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">
               Play, create, and share amazing games
             </p>
           </div>
@@ -145,17 +145,17 @@ const MyCreations = () => {
             setActiveTab(v);
             window.location.hash = v;
           }}>
-            <TabsList className="mb-8">
-              <TabsTrigger value="my-creations" className="gap-2">
-                <FolderOpen className="w-4 h-4" />
-                My Creations
+            <TabsList className="mb-6 sm:mb-8 w-full sm:w-auto grid grid-cols-3 sm:flex">
+              <TabsTrigger value="my-creations" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4">
+                <FolderOpen className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden xs:inline">My </span>Creations
               </TabsTrigger>
-              <TabsTrigger value="templates" className="gap-2">
-                <Gamepad2 className="w-4 h-4" />
-                Template Games
+              <TabsTrigger value="templates" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4">
+                <Gamepad2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                Templates
               </TabsTrigger>
-              <TabsTrigger value="explore" className="gap-2">
-                <Users className="w-4 h-4" />
+              <TabsTrigger value="explore" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4">
+                <Users className="w-3 h-3 sm:w-4 sm:h-4" />
                 Explore
               </TabsTrigger>
             </TabsList>
@@ -163,12 +163,12 @@ const MyCreations = () => {
             {/* My Creations Tab */}
             <TabsContent value="my-creations">
               {creations.length === 0 ? (
-                <div className="text-center py-16 bg-muted/30 rounded-2xl border border-border">
-                  <p className="text-muted-foreground mb-4">You haven't created anything yet</p>
-                  <Button onClick={() => navigate("/")}>Create your first game</Button>
+                <div className="text-center py-12 sm:py-16 bg-muted/30 rounded-2xl border border-border">
+                  <p className="text-muted-foreground mb-4 text-sm sm:text-base">You haven't created anything yet</p>
+                  <Button onClick={() => navigate("/")} size="sm">Create your first game</Button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   {creations.map((creation) => (
                     <div
                       key={creation.id}

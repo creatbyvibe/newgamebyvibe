@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
   X,
   Maximize2,
@@ -11,20 +12,20 @@ import {
   Save,
   Share2,
   Code,
-  Eye,
   Loader2,
   Globe,
   Lock,
   Wand2,
-  Send,
   Sparkles,
   ChevronDown,
   ChevronUp,
+  Menu,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import CodeEditor from "./CodeEditor";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface CreationEditorProps {
   initialCode: string;
@@ -42,12 +43,14 @@ const CreationEditor = ({
   onSaved,
 }: CreationEditorProps) => {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [code, setCode] = useState(initialCode);
   const [previewCode, setPreviewCode] = useState(initialCode);
   const [title, setTitle] = useState("");
   const [isPublic, setIsPublic] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(true);
   const [showAdvancedCode, setShowAdvancedCode] = useState(false);
+  const [showAIPanel, setShowAIPanel] = useState(!isMobile);
   const [saving, setSaving] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
@@ -163,33 +166,134 @@ const CreationEditor = ({
   };
 
   const quickActions = [
-    { label: "🎨 Change colors", prompt: "Change the color scheme to something more vibrant and modern" },
-    { label: "✨ Add animations", prompt: "Add smooth animations and transitions" },
-    { label: "📱 Mobile friendly", prompt: "Make it fully responsive for mobile devices" },
-    { label: "🔊 Add sounds", prompt: "Add sound effects for interactions" },
-    { label: "🌙 Dark mode", prompt: "Add a dark mode option" },
-    { label: "🎮 More fun", prompt: "Make it more fun and engaging with better interactions" },
+    { label: "🎨 Colors", prompt: "Change the color scheme to something more vibrant and modern" },
+    { label: "✨ Animate", prompt: "Add smooth animations and transitions" },
+    { label: "📱 Mobile", prompt: "Make it fully responsive for mobile devices" },
+    { label: "🔊 Sounds", prompt: "Add sound effects for interactions" },
+    { label: "🌙 Dark", prompt: "Add a dark mode option" },
+    { label: "🎮 Fun", prompt: "Make it more fun and engaging" },
   ];
+
+  // AI Panel Content (reusable for both desktop sidebar and mobile sheet)
+  const AIEditPanel = () => (
+    <div className="flex flex-col h-full">
+      <div className="p-4 flex-1 overflow-y-auto">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center flex-shrink-0">
+            <Wand2 className="w-4 h-4 text-white" />
+          </div>
+          <div className="min-w-0">
+            <h3 className="font-display font-semibold text-foreground">AI Editor</h3>
+            <p className="text-xs text-muted-foreground truncate">Describe changes in plain language</p>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="mb-4">
+          <p className="text-xs font-medium text-muted-foreground mb-2">Quick Actions</p>
+          <div className="flex flex-wrap gap-1.5">
+            {quickActions.map((action) => (
+              <button
+                key={action.label}
+                onClick={() => setAiPrompt(action.prompt)}
+                className="px-2.5 py-1 text-xs rounded-full bg-background border border-border hover:border-primary/50 hover:bg-primary/5 text-muted-foreground hover:text-foreground transition-all"
+              >
+                {action.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* AI Input */}
+        <div className="space-y-3">
+          <Textarea
+            value={aiPrompt}
+            onChange={(e) => setAiPrompt(e.target.value)}
+            placeholder="Tell me what to change..."
+            className="min-h-[100px] resize-none text-sm"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                handleAIModify();
+              }
+            }}
+          />
+          <Button
+            onClick={handleAIModify}
+            disabled={aiLoading || !aiPrompt.trim()}
+            className="w-full gap-2"
+          >
+            {aiLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Applying...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                Apply Changes
+              </>
+            )}
+          </Button>
+          <p className="text-xs text-center text-muted-foreground hidden sm:block">
+            Ctrl/Cmd + Enter to apply
+          </p>
+        </div>
+      </div>
+
+      {/* Advanced: Code Editor Toggle */}
+      <div className="border-t border-border mt-auto">
+        <button
+          onClick={() => setShowAdvancedCode(!showAdvancedCode)}
+          className="w-full px-4 py-3 flex items-center justify-between text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <Code className="w-4 h-4" />
+            <span>Advanced: Code</span>
+          </div>
+          {showAdvancedCode ? (
+            <ChevronDown className="w-4 h-4" />
+          ) : (
+            <ChevronUp className="w-4 h-4" />
+          )}
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div
       className={`bg-background transition-all duration-300 animate-fade-in ${
         isFullscreen
           ? "fixed inset-0 z-50"
-          : "fixed inset-4 z-50 rounded-2xl border border-border shadow-medium overflow-hidden"
+          : "fixed inset-2 sm:inset-4 z-50 rounded-2xl border border-border shadow-medium overflow-hidden"
       }`}
     >
       <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
-          <div className="flex items-center gap-4">
+        <div className="flex items-center justify-between px-2 sm:px-4 py-2 sm:py-3 border-b border-border bg-muted/30 gap-2">
+          <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+            {/* Mobile: AI Panel Toggle */}
+            {isMobile && (
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-9 w-9 flex-shrink-0">
+                    <Wand2 className="w-4 h-4 text-primary" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[300px] p-0">
+                  <AIEditPanel />
+                </SheetContent>
+              </Sheet>
+            )}
+            
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Creation title..."
-              className="w-64 h-9 font-display font-semibold"
+              placeholder="Title..."
+              className="w-full sm:w-48 md:w-64 h-9 font-display font-semibold text-sm"
             />
-            <div className="flex items-center gap-2">
+            
+            <div className="hidden sm:flex items-center gap-2">
               {isPublic ? (
                 <Globe className="w-4 h-4 text-primary" />
               ) : (
@@ -200,17 +304,25 @@ const CreationEditor = ({
                 onCheckedChange={setIsPublic}
                 id="public-toggle"
               />
-              <Label htmlFor="public-toggle" className="text-sm text-muted-foreground">
+              <Label htmlFor="public-toggle" className="text-sm text-muted-foreground hidden md:inline">
                 {isPublic ? "Public" : "Private"}
               </Label>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+            {/* Mobile: Public Toggle */}
+            <div className="flex sm:hidden items-center gap-1">
+              <Switch
+                checked={isPublic}
+                onCheckedChange={setIsPublic}
+                id="public-toggle-mobile"
+              />
+            </div>
+
             {creationId && isPublic && (
-              <Button variant="ghost" size="sm" onClick={handleShare} className="gap-2">
+              <Button variant="ghost" size="icon" onClick={handleShare} className="h-8 w-8 hidden sm:flex">
                 <Share2 className="w-4 h-4" />
-                Share
               </Button>
             )}
 
@@ -218,21 +330,21 @@ const CreationEditor = ({
               size="sm"
               onClick={handleSave}
               disabled={saving || !user}
-              className="gap-2"
+              className="gap-1 sm:gap-2 h-8 sm:h-9 px-2 sm:px-3"
             >
               {saving ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <Save className="w-4 h-4" />
               )}
-              Save
+              <span className="hidden sm:inline">Save</span>
             </Button>
 
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setIsFullscreen(!isFullscreen)}
-              className="h-8 w-8"
+              className="h-8 w-8 hidden sm:flex"
             >
               {isFullscreen ? (
                 <Minimize2 className="w-4 h-4" />
@@ -249,101 +361,23 @@ const CreationEditor = ({
 
         {/* Content */}
         <div className="flex-1 flex overflow-hidden">
-          {/* Left: AI Edit Panel */}
-          <div className="w-80 border-r border-border flex flex-col bg-muted/20">
-            {/* AI Edit Section */}
-            <div className="p-4 flex-1 overflow-y-auto">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                  <Wand2 className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-display font-semibold text-foreground">AI Editor</h3>
-                  <p className="text-xs text-muted-foreground">Describe changes in plain language</p>
-                </div>
-              </div>
-
-              {/* Quick Actions */}
-              <div className="mb-4">
-                <p className="text-xs font-medium text-muted-foreground mb-2">Quick Actions</p>
-                <div className="flex flex-wrap gap-2">
-                  {quickActions.map((action) => (
-                    <button
-                      key={action.label}
-                      onClick={() => setAiPrompt(action.prompt)}
-                      className="px-3 py-1.5 text-xs rounded-full bg-background border border-border hover:border-primary/50 hover:bg-primary/5 text-muted-foreground hover:text-foreground transition-all"
-                    >
-                      {action.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* AI Input */}
-              <div className="space-y-3">
-                <Textarea
-                  value={aiPrompt}
-                  onChange={(e) => setAiPrompt(e.target.value)}
-                  placeholder="Tell me what to change...&#10;&#10;Examples:&#10;• Make the background blue&#10;• Add a restart button&#10;• Speed up the game"
-                  className="min-h-[120px] resize-none text-sm"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-                      handleAIModify();
-                    }
-                  }}
-                />
-                <Button
-                  onClick={handleAIModify}
-                  disabled={aiLoading || !aiPrompt.trim()}
-                  className="w-full gap-2"
-                >
-                  {aiLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Applying...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4" />
-                      Apply Changes
-                    </>
-                  )}
-                </Button>
-                <p className="text-xs text-center text-muted-foreground">
-                  Ctrl/Cmd + Enter to apply
-                </p>
-              </div>
+          {/* Left: AI Edit Panel (Desktop only) */}
+          {!isMobile && (
+            <div className="w-64 lg:w-80 border-r border-border flex-shrink-0 bg-muted/20">
+              <AIEditPanel />
             </div>
-
-            {/* Advanced: Code Editor Toggle */}
-            <div className="border-t border-border">
-              <button
-                onClick={() => setShowAdvancedCode(!showAdvancedCode)}
-                className="w-full px-4 py-3 flex items-center justify-between text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <Code className="w-4 h-4" />
-                  <span>Advanced: Edit Code</span>
-                </div>
-                {showAdvancedCode ? (
-                  <ChevronDown className="w-4 h-4" />
-                ) : (
-                  <ChevronUp className="w-4 h-4" />
-                )}
-              </button>
-            </div>
-          </div>
+          )}
 
           {/* Right: Preview or Code+Preview */}
-          <div className="flex-1 flex">
+          <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
             {showAdvancedCode ? (
               <>
                 {/* Code Editor */}
-                <div className="w-1/2 border-r border-border">
+                <div className="h-1/2 md:h-full md:w-1/2 border-b md:border-b-0 md:border-r border-border">
                   <CodeEditor code={code} onCodeChange={setCode} onRun={handleRun} />
                 </div>
                 {/* Preview */}
-                <div className="w-1/2 bg-white">
+                <div className="h-1/2 md:h-full md:w-1/2 bg-white">
                   <iframe
                     ref={iframeRef}
                     srcDoc={previewCode}
