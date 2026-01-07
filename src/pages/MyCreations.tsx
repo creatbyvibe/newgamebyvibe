@@ -6,9 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/Navbar";
-import CreationEditor from "@/components/CreationEditor";
 import WorkGallery from "@/components/WorkGallery";
-import { Play, Heart, Trash2, Globe, Lock, Loader2, Gamepad2, FolderOpen, Users } from "lucide-react";
+import { Play, Heart, Trash2, Globe, Lock, Loader2, Gamepad2, FolderOpen, Users, Pencil } from "lucide-react";
 import { toast } from "sonner";
 
 interface Creation {
@@ -28,7 +27,6 @@ const MyCreations = () => {
   const location = useLocation();
   const [creations, setCreations] = useState<Creation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCreation, setSelectedCreation] = useState<Creation | null>(null);
   
   // Get initial tab from hash
   const getInitialTab = () => {
@@ -109,24 +107,6 @@ const MyCreations = () => {
     );
   }
 
-  if (selectedCreation) {
-    return (
-      <div className="min-h-screen bg-background pt-20 px-6">
-        <Navbar />
-        <div className="max-w-5xl mx-auto py-8">
-          <CreationEditor
-            initialCode={selectedCreation.html_code}
-            prompt={selectedCreation.prompt}
-            creationId={selectedCreation.id}
-            onClose={() => {
-              setSelectedCreation(null);
-              fetchCreations();
-            }}
-          />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -177,7 +157,7 @@ const MyCreations = () => {
                       {/* Preview */}
                       <div
                         className="aspect-video relative cursor-pointer"
-                        onClick={() => setSelectedCreation(creation)}
+                        onClick={() => navigate(`/studio/${creation.id}`)}
                       >
                         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20" />
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-foreground/10 backdrop-blur-sm">
