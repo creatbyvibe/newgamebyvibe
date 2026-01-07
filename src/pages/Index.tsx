@@ -97,7 +97,7 @@ const Index = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Free Creation Card */}
             <div
-              onClick={() => navigate('/inspiration')}
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
               className="group relative rounded-2xl bg-gradient-to-br from-primary/5 to-secondary/5 border border-primary/20 p-6 cursor-pointer hover:border-primary/40 transition-all hover:-translate-y-1"
             >
               <div className="flex items-start gap-4">
@@ -107,7 +107,7 @@ const Index = () => {
                 <div className="flex-1">
                   <h3 className="font-display text-lg font-semibold text-foreground mb-1">自由创作</h3>
                   <p className="text-sm text-muted-foreground">
-                    输入任何想法，AI 帮你实现。从模板开始或完全自由发挥。
+                    输入任何想法，AI 帮你实现。完全自由发挥你的创意。
                   </p>
                 </div>
                 <ArrowRight className="w-5 h-5 text-primary opacity-0 group-hover:opacity-100 transition-all transform translate-x-0 group-hover:translate-x-1" />
