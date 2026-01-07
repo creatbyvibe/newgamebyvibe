@@ -22,12 +22,12 @@ const WorkGallery = () => {
   return (
     <div className="w-full">
       {/* Header */}
-      <div className="flex items-end justify-between mb-10">
+      <div className="flex items-end justify-between mb-8">
         <div>
-          <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground">
+          <h2 className="text-2xl font-bold text-foreground">
             Trending Creations
           </h2>
-          <p className="text-muted-foreground mt-2">
+          <p className="text-muted-foreground mt-1">
             See what others are building
           </p>
         </div>
