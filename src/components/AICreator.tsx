@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Sparkles, ArrowRight, Loader2 } from "lucide-react";
+import { Sparkles, ArrowRight, Wand2, Code, Palette, Zap, Gamepad2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import AuthModal from "./AuthModal";
@@ -13,6 +13,14 @@ const suggestions = [
   "Focus timer",
 ];
 
+const loadingSteps = [
+  { icon: Wand2, text: "Understanding your idea...", duration: 2000 },
+  { icon: Palette, text: "Designing the interface...", duration: 3000 },
+  { icon: Code, text: "Writing the code...", duration: 4000 },
+  { icon: Zap, text: "Adding magic touches...", duration: 2000 },
+  { icon: Gamepad2, text: "Almost ready...", duration: 1500 },
+];
+
 const AICreator = () => {
   const { user } = useAuth();
   const [input, setInput] = useState("");
@@ -21,6 +29,36 @@ const AICreator = () => {
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [currentPrompt, setCurrentPrompt] = useState("");
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
+  const [progress, setProgress] = useState(0);
+
+  // Animate loading steps
+  useEffect(() => {
+    if (!isGenerating) {
+      setLoadingStep(0);
+      setProgress(0);
+      return;
+    }
+
+    let stepIndex = 0;
+    let progressValue = 0;
+    
+    const progressInterval = setInterval(() => {
+      progressValue += 1;
+      // Cap at 95% until actual completion
+      setProgress(Math.min(progressValue, 95));
+    }, 150);
+
+    const stepInterval = setInterval(() => {
+      stepIndex = (stepIndex + 1) % loadingSteps.length;
+      setLoadingStep(stepIndex);
+    }, 2500);
+
+    return () => {
+      clearInterval(progressInterval);
+      clearInterval(stepInterval);
+    };
+  }, [isGenerating]);
 
   const handleSuggestionClick = (suggestion: string) => {
     setInput(suggestion);
@@ -113,7 +151,11 @@ const AICreator = () => {
         }
       }
 
+      setProgress(100);
+      
       if (htmlCode && htmlCode.includes("<!DOCTYPE html")) {
+        // Small delay to show 100% completion
+        await new Promise(resolve => setTimeout(resolve, 300));
         setGeneratedCode(htmlCode);
         toast.success("Creation generated!");
       } else {
@@ -152,79 +194,162 @@ const AICreator = () => {
     );
   }
 
+  const CurrentIcon = loadingSteps[loadingStep].icon;
+
   return (
     <>
       <div className="w-full max-w-xl">
-        {/* Input Container */}
-        <div
-          className={`relative rounded-2xl bg-card border-2 transition-all duration-300 shadow-soft ${
-            isFocused
-              ? "border-primary shadow-glow"
-              : "border-border hover:border-primary/30"
-          }`}
-        >
-          <div className="p-5 pb-16">
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center flex-shrink-0">
-                {isGenerating ? (
-                  <Loader2 className="w-5 h-5 text-primary-foreground animate-spin" />
-                ) : (
-                  <Sparkles className="w-5 h-5 text-primary-foreground" />
-                )}
+        {/* Loading State */}
+        {isGenerating ? (
+          <div className="rounded-2xl bg-card border-2 border-primary shadow-glow overflow-hidden animate-fade-in">
+            {/* Preview area with animated gradient */}
+            <div className="relative h-48 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/20 to-accent/20 animate-pulse" />
+              
+              {/* Animated particles */}
+              <div className="absolute inset-0">
+                {[...Array(12)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="absolute w-2 h-2 rounded-full bg-primary/40"
+                    style={{
+                      left: `${10 + (i % 4) * 25}%`,
+                      top: `${15 + Math.floor(i / 4) * 30}%`,
+                      animation: `float ${2 + (i % 3)}s ease-in-out infinite`,
+                      animationDelay: `${i * 0.2}s`,
+                    }}
+                  />
+                ))}
               </div>
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                onKeyDown={handleKeyDown}
-                placeholder="Describe what you want to create..."
-                className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground resize-none outline-none text-base min-h-[70px]"
-                rows={2}
-                disabled={isGenerating}
-              />
+
+              {/* Center icon */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="relative">
+                  {/* Pulsing ring */}
+                  <div className="absolute inset-0 -m-4 rounded-full bg-primary/20 animate-ping" />
+                  <div className="absolute inset-0 -m-2 rounded-full bg-primary/30 animate-pulse" />
+                  
+                  {/* Icon container */}
+                  <div className="relative w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center shadow-glow transition-all duration-500">
+                    <CurrentIcon className="w-8 h-8 text-primary-foreground transition-all duration-300" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Progress section */}
+            <div className="p-6 border-t border-border bg-muted/30">
+              {/* Step text with animation */}
+              <div className="text-center mb-4">
+                <p className="font-display font-semibold text-foreground animate-fade-in" key={loadingStep}>
+                  {loadingSteps[loadingStep].text}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Creating: "{currentPrompt.slice(0, 30)}{currentPrompt.length > 30 ? '...' : ''}"
+                </p>
+              </div>
+
+              {/* Progress bar */}
+              <div className="relative h-2 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary via-secondary to-primary rounded-full transition-all duration-300 ease-out"
+                  style={{ 
+                    width: `${progress}%`,
+                    backgroundSize: '200% 100%',
+                    animation: 'shimmer 2s linear infinite',
+                  }}
+                />
+              </div>
+              
+              {/* Progress percentage */}
+              <div className="flex justify-between mt-2 text-xs text-muted-foreground">
+                <span>Generating</span>
+                <span className="font-mono">{progress}%</span>
+              </div>
+
+              {/* Step indicators */}
+              <div className="flex justify-center gap-2 mt-4">
+                {loadingSteps.map((step, index) => {
+                  const StepIcon = step.icon;
+                  return (
+                    <div
+                      key={index}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                        index === loadingStep
+                          ? "bg-primary text-primary-foreground scale-110"
+                          : index < loadingStep
+                          ? "bg-primary/20 text-primary"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      <StepIcon className="w-4 h-4" />
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
+        ) : (
+          /* Normal Input Container */
+          <div
+            className={`relative rounded-2xl bg-card border-2 transition-all duration-300 shadow-soft ${
+              isFocused
+                ? "border-primary shadow-glow"
+                : "border-border hover:border-primary/30"
+            }`}
+          >
+            <div className="p-5 pb-16">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center flex-shrink-0">
+                  <Sparkles className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onFocus={() => setIsFocused(true)}
+                  onBlur={() => setIsFocused(false)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Describe what you want to create..."
+                  className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground resize-none outline-none text-base min-h-[70px]"
+                  rows={2}
+                  disabled={isGenerating}
+                />
+              </div>
+            </div>
 
-          {/* Bottom bar */}
-          <div className="absolute bottom-0 left-0 right-0 p-4 flex items-center justify-between border-t border-border bg-muted/30 rounded-b-2xl">
-            <span className="text-sm text-muted-foreground hidden sm:block">
-              {isGenerating ? "Generating your creation..." : "Press Enter to create"}
-            </span>
-            <Button
-              size="sm"
-              className="gap-2"
-              disabled={!input.trim() || isGenerating}
-              onClick={handleCreate}
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                <>
-                  Create
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </Button>
+            {/* Bottom bar */}
+            <div className="absolute bottom-0 left-0 right-0 p-4 flex items-center justify-between border-t border-border bg-muted/30 rounded-b-2xl">
+              <span className="text-sm text-muted-foreground hidden sm:block">
+                Press Enter to create
+              </span>
+              <Button
+                size="sm"
+                className="gap-2"
+                disabled={!input.trim() || isGenerating}
+                onClick={handleCreate}
+              >
+                Create
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Suggestions */}
-        <div className="mt-5 flex flex-wrap gap-2 justify-center">
-          {suggestions.map((suggestion, index) => (
-            <button
-              key={index}
-              onClick={() => handleSuggestionClick(suggestion)}
-              disabled={isGenerating}
-              className="px-4 py-2 rounded-full bg-muted hover:bg-primary/10 text-sm text-muted-foreground hover:text-primary transition-all duration-200 border border-transparent hover:border-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {suggestion}
-            </button>
-          ))}
-        </div>
+        {!isGenerating && (
+          <div className="mt-5 flex flex-wrap gap-2 justify-center animate-fade-in">
+            {suggestions.map((suggestion, index) => (
+              <button
+                key={index}
+                onClick={() => handleSuggestionClick(suggestion)}
+                disabled={isGenerating}
+                className="px-4 py-2 rounded-full bg-muted hover:bg-primary/10 text-sm text-muted-foreground hover:text-primary transition-all duration-200 border border-transparent hover:border-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
