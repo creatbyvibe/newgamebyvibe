@@ -74,8 +74,8 @@ const Index = () => {
           <div className="absolute bottom-20 left-1/3 w-80 h-80 bg-accent/5 rounded-full blur-3xl" />
         </div>
 
-        <div className="relative z-10 w-full max-w-5xl mx-auto">
-          <div className="flex flex-col items-center text-center mb-14">
+        <div className="relative z-10 w-full max-w-4xl mx-auto">
+          <div className="flex flex-col items-center text-center mb-12">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 bg-primary/10 rounded-full px-4 py-1.5 mb-8 animate-fade-in">
               <Sparkles className="w-4 h-4 text-primary" />
@@ -84,27 +84,27 @@ const Index = () => {
               </span>
             </div>
 
-            {/* Title - Better typography */}
+            {/* Title */}
             <h1
-              className="font-display font-bold text-foreground mb-6 animate-fade-in"
+              className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-foreground mb-4 animate-fade-in tracking-tight"
               style={{ animationDelay: "100ms" }}
             >
-              <span className="block text-5xl md:text-6xl lg:text-7xl mb-2">
-                One prompt.
-              </span>
-              <span className="block text-5xl md:text-6xl lg:text-7xl text-gradient-primary">
-                One creation.
-              </span>
+              Create by Vibe,
+            </h1>
+            <h1
+              className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gradient-primary mb-8 animate-fade-in tracking-tight"
+              style={{ animationDelay: "150ms" }}
+            >
+              Share the Joy
             </h1>
 
-            {/* Subtitle - Better line height */}
+            {/* Subtitle */}
             <p
-              className="text-lg md:text-xl text-muted-foreground max-w-lg leading-relaxed animate-fade-in"
+              className="text-lg text-muted-foreground max-w-md leading-relaxed animate-fade-in"
               style={{ animationDelay: "200ms" }}
             >
               Turn your ideas into fun games and tools in minutes.
-              <br className="hidden sm:block" />
-              <span className="text-foreground font-medium">No coding needed.</span>
+              <span className="text-foreground font-medium"> No coding needed.</span>
             </p>
           </div>
 
@@ -116,23 +116,23 @@ const Index = () => {
             <AICreator />
           </div>
 
-          {/* Stats - Better spacing */}
+          {/* Stats */}
           <div
-            className="flex items-center justify-center gap-10 mt-20 animate-fade-in"
+            className="flex items-center justify-center gap-10 mt-16 animate-fade-in"
             style={{ animationDelay: "400ms" }}
           >
             <div className="text-center">
-              <div className="text-2xl md:text-3xl font-display font-bold text-foreground">50k+</div>
+              <div className="text-2xl font-bold text-foreground">50k+</div>
               <div className="text-sm text-muted-foreground mt-1">Creations</div>
             </div>
-            <div className="w-px h-12 bg-border" />
+            <div className="w-px h-10 bg-border" />
             <div className="text-center">
-              <div className="text-2xl md:text-3xl font-display font-bold text-foreground">10k+</div>
+              <div className="text-2xl font-bold text-foreground">10k+</div>
               <div className="text-sm text-muted-foreground mt-1">Creators</div>
             </div>
-            <div className="w-px h-12 bg-border" />
+            <div className="w-px h-10 bg-border" />
             <div className="text-center">
-              <div className="text-2xl md:text-3xl font-display font-bold text-primary">∞</div>
+              <div className="text-2xl font-bold text-primary">∞</div>
               <div className="text-sm text-muted-foreground mt-1">Possibilities</div>
             </div>
           </div>
@@ -142,11 +142,11 @@ const Index = () => {
       {/* Templates Section */}
       <section id="explore" className="py-24 px-6 bg-muted/30">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-foreground mb-3">
               Start from a template
             </h2>
-            <p className="text-muted-foreground text-lg max-w-md mx-auto">
+            <p className="text-muted-foreground max-w-md mx-auto">
               Pick a starter or describe your own idea
             </p>
           </div>
@@ -161,7 +161,7 @@ const Index = () => {
             ))}
           </BentoGrid>
 
-          <div className="text-center mt-14">
+          <div className="text-center mt-12">
             <Button variant="outline" size="lg">
               Browse 100+ templates
             </Button>
@@ -183,10 +183,10 @@ const Index = () => {
             <div className="absolute inset-0 gradient-fun" />
             
             <div className="relative z-10 p-12 md:p-16 text-center">
-              <h2 className="text-2xl md:text-3xl font-display font-bold text-white mb-4">
+              <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
                 Ready to create something fun?
               </h2>
-              <p className="text-white/80 mb-8 max-w-sm mx-auto text-base">
+              <p className="text-white/80 mb-8 max-w-sm mx-auto">
                 Join 10,000+ creators turning ideas into reality
               </p>
               <Button
@@ -205,13 +205,18 @@ const Index = () => {
       <footer className="py-16 px-6 border-t border-border bg-muted/20">
         <div className="max-w-5xl mx-auto">
           <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-8">
-            {/* Logo & Slogan */}
-            <div className="text-center md:text-left">
-              <span className="font-display font-bold text-2xl text-gradient-primary">
-                ByVibe
-              </span>
-              <p className="text-xs font-medium text-muted-foreground tracking-widest uppercase mt-1">
-                Create by Vibe
+            {/* Logo */}
+            <div>
+              <div className="flex items-baseline">
+                <span className="font-extrabold text-xl tracking-tight text-gradient-primary">
+                  byvibe
+                </span>
+                <span className="font-extrabold text-xl tracking-tight text-muted-foreground">
+                  .ai
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground mt-2">
+                Create by Vibe, Share the Joy
               </p>
             </div>
 
@@ -256,7 +261,7 @@ const Index = () => {
 
           <div className="mt-12 pt-8 border-t border-border text-center">
             <p className="text-sm text-muted-foreground">
-              © 2024 ByVibe. All rights reserved.
+              © 2024 byvibe.ai. All rights reserved.
             </p>
           </div>
         </div>
