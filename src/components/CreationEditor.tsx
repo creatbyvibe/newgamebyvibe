@@ -40,7 +40,7 @@ const CreationEditor = ({
   const [previewCode, setPreviewCode] = useState(initialCode);
   const [title, setTitle] = useState("");
   const [isPublic, setIsPublic] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(true); // Default to fullscreen for better UX
   const [showCode, setShowCode] = useState(false);
   const [saving, setSaving] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -123,10 +123,10 @@ const CreationEditor = ({
 
   return (
     <div
-      className={`bg-background transition-all duration-300 ${
+      className={`bg-background transition-all duration-300 animate-fade-in ${
         isFullscreen
           ? "fixed inset-0 z-50"
-          : "w-full max-w-5xl mx-auto rounded-2xl border border-border shadow-medium overflow-hidden"
+          : "fixed inset-4 z-50 rounded-2xl border border-border shadow-medium overflow-hidden"
       }`}
     >
       <div className="flex flex-col h-full">
