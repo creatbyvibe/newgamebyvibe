@@ -65,10 +65,12 @@ const AICreator = () => {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey && input.trim()) {
+    // Ctrl+Enter or Cmd+Enter to generate
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && input.trim()) {
       e.preventDefault();
       handleCreate();
     }
+    // Enter alone just creates new lines (default behavior)
   };
 
   const handleCreate = async () => {
@@ -319,17 +321,13 @@ const AICreator = () => {
 
             {/* Bottom bar */}
             <div className="absolute bottom-0 left-0 right-0 p-4 flex items-center justify-between border-t border-border bg-muted/30 rounded-b-2xl">
-              <div className="text-xs text-muted-foreground hidden sm:flex items-center gap-3">
-                <span className="flex items-center gap-1">
-                  <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono border border-border">Enter</kbd>
-                  <span>to create</span>
-                </span>
-                <span className="flex items-center gap-1">
-                  <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono border border-border">Shift</kbd>
-                  <span>+</span>
-                  <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono border border-border">Enter</kbd>
-                  <span>new line</span>
-                </span>
+              <div className="text-xs text-muted-foreground hidden sm:flex items-center gap-1">
+                <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono border border-border">⌘</kbd>
+                <span>/</span>
+                <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono border border-border">Ctrl</kbd>
+                <span>+</span>
+                <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono border border-border">Enter</kbd>
+                <span className="ml-1">to create</span>
               </div>
               <Button
                 size="sm"
