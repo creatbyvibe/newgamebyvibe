@@ -22,12 +22,12 @@ const WorkGallery = () => {
   return (
     <div className="w-full">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-end justify-between mb-10">
         <div>
-          <h3 className="text-2xl font-display font-bold text-foreground">
+          <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground">
             Trending Creations
-          </h3>
-          <p className="text-muted-foreground mt-1">
+          </h2>
+          <p className="text-muted-foreground mt-2">
             See what others are building
           </p>
         </div>
@@ -39,35 +39,32 @@ const WorkGallery = () => {
         </a>
       </div>
 
-      {/* Horizontal scroll gallery */}
-      <div className="flex gap-5 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
+      {/* Gallery */}
+      <div className="flex gap-5 overflow-x-auto pb-4 -mx-6 px-6 scrollbar-hide">
         {works.map((work, index) => (
           <div
             key={work.id}
-            className="flex-shrink-0 w-72 group cursor-pointer animate-fade-in"
+            className="flex-shrink-0 w-64 group cursor-pointer animate-fade-in"
             style={{ animationDelay: `${index * 100}ms` }}
           >
-            {/* Preview card */}
-            <div className="relative aspect-video rounded-2xl overflow-hidden mb-3 border border-border group-hover:border-primary/30 transition-all duration-300 shadow-soft group-hover:shadow-medium">
-              {/* Gradient placeholder */}
+            {/* Preview */}
+            <div className="relative aspect-video rounded-xl overflow-hidden mb-3 border border-border group-hover:border-primary/30 transition-all duration-300 shadow-soft group-hover:shadow-medium">
               <div
                 className={`absolute inset-0 bg-gradient-to-br ${work.gradient} opacity-30 group-hover:opacity-50 transition-opacity`}
               />
 
-              {/* Play icon overlay */}
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-foreground/10 backdrop-blur-sm">
-                <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center shadow-glow">
-                  <Play className="w-6 h-6 text-primary-foreground ml-1" />
+                <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-glow">
+                  <Play className="w-5 h-5 text-primary-foreground ml-0.5" />
                 </div>
               </div>
 
-              {/* Stats overlay */}
-              <div className="absolute bottom-2 left-2 right-2 flex items-center gap-3 text-xs">
-                <span className="flex items-center gap-1 bg-background/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-foreground">
+              <div className="absolute bottom-2 left-2 right-2 flex items-center gap-2 text-xs">
+                <span className="flex items-center gap-1 bg-background/90 backdrop-blur-sm px-2 py-1 rounded-full text-foreground">
                   <Play className="w-3 h-3" />
                   {work.plays.toLocaleString()}
                 </span>
-                <span className="flex items-center gap-1 bg-background/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-foreground">
+                <span className="flex items-center gap-1 bg-background/90 backdrop-blur-sm px-2 py-1 rounded-full text-foreground">
                   <Heart className="w-3 h-3" />
                   {work.likes}
                 </span>
@@ -77,12 +74,12 @@ const WorkGallery = () => {
             {/* Info */}
             <div className="flex items-start justify-between">
               <div>
-                <h4 className="font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                <h4 className="text-sm font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1">
                   {work.title}
                 </h4>
-                <p className="text-sm text-muted-foreground">by {work.author}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">by {work.author}</p>
               </div>
-              <button className="p-2 rounded-xl hover:bg-muted transition-colors opacity-0 group-hover:opacity-100">
+              <button className="p-2 rounded-lg hover:bg-muted transition-colors opacity-0 group-hover:opacity-100">
                 <GitFork className="w-4 h-4 text-muted-foreground hover:text-primary" />
               </button>
             </div>
