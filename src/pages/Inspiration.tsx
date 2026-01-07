@@ -11,8 +11,8 @@ import {
   Dice1, 
   ArrowLeft,
   Sparkles,
-  Play,
-  ChevronRight
+  ChevronRight,
+  Play
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
@@ -138,7 +138,12 @@ const Inspiration = () => {
             <h1 className="font-display text-2xl font-bold mb-2">{selectedTemplate.title}</h1>
             <p className="text-muted-foreground">{selectedTemplate.description}</p>
           </div>
-          <AICreator key={selectedTemplate.id} />
+          {/* Pass the template prompt to AICreator */}
+          <AICreator 
+            key={selectedTemplate.id} 
+            initialPrompt={selectedTemplate.prompt}
+            showSuggestions={false}
+          />
         </div>
       </div>
     );
@@ -242,8 +247,8 @@ const Inspiration = () => {
                     variant="ghost" 
                     className="gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
                   >
+                    <Play className="w-3.5 h-3.5" />
                     创建
-                    <ChevronRight className="w-4 h-4" />
                   </Button>
                 </div>
 
