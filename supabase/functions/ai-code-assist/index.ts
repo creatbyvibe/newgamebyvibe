@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, currentCode } = await req.json();
+    const { prompt, currentCode, context } = await req.json();
 
     if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
       return new Response(
@@ -32,19 +32,28 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are an expert web developer AI assistant that helps modify HTML/CSS/JavaScript code.
+    const systemPrompt = `You are an expert web developer AI assistant that helps modify HTML/CSS/JavaScript code for games and interactive tools.
 
-Given the current code and a user request, modify the code to implement the requested changes.
+Your task is to modify the given code based on the user's request.
 
 Rules:
-1. Keep the existing functionality working
+1. Keep the existing functionality working unless asked to change it
 2. Make only the requested changes
 3. Use modern CSS and JavaScript best practices
 4. Keep the code clean and well-organized
-5. Return ONLY the complete modified HTML code, nothing else
-6. Start with <!DOCTYPE html> and end with </html>
-7. Preserve the overall structure and style unless asked to change it
-8. Add helpful comments for significant changes
+5. Add helpful comments for significant changes
+6. Preserve the overall structure and style unless asked to change it
+7. For games, ensure smooth performance and good user experience
+
+IMPORTANT: Your response MUST be valid JSON with this exact structure:
+{
+  "code": "THE COMPLETE MODIFIED HTML CODE STARTING WITH <!DOCTYPE html>",
+  "explanation": "A brief explanation of what was changed (1-2 sentences in the same language as the user's prompt)"
+}
+
+The explanation should be friendly and concise, describing the key changes made.
+
+Original creation context: ${context || 'Interactive web content'}
 
 Current code to modify:
 \`\`\`html
@@ -69,46 +78,76 @@ ${currentCode}
     if (!response.ok) {
       if (response.status === 429) {
         return new Response(
-          JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }),
+          JSON.stringify({ error: "请求过于频繁，请稍后再试。" }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       if (response.status === 402) {
         return new Response(
-          JSON.stringify({ error: "Usage limit reached. Please add credits to continue." }),
+          JSON.stringify({ error: "使用额度已用完，请添加积分继续使用。" }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
       return new Response(
-        JSON.stringify({ error: "Failed to process. Please try again." }),
+        JSON.stringify({ error: "处理失败，请重试。" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     const data = await response.json();
-    let code = data.choices?.[0]?.message?.content || "";
+    let content = data.choices?.[0]?.message?.content || "";
 
-    // Clean up the response - extract HTML if wrapped in code blocks
-    if (code.includes("```html")) {
-      code = code.split("```html")[1].split("```")[0].trim();
-    } else if (code.includes("```")) {
-      code = code.split("```")[1].split("```")[0].trim();
-    }
-
-    // Ensure it starts with DOCTYPE
-    if (!code.startsWith("<!DOCTYPE")) {
-      const doctypeIndex = code.indexOf("<!DOCTYPE");
-      if (doctypeIndex > -1) {
-        code = code.substring(doctypeIndex);
+    // Try to parse as JSON first
+    try {
+      // Clean up the response if it's wrapped in markdown code blocks
+      if (content.includes("```json")) {
+        content = content.split("```json")[1].split("```")[0].trim();
+      } else if (content.includes("```")) {
+        content = content.split("```")[1].split("```")[0].trim();
       }
-    }
 
-    return new Response(
-      JSON.stringify({ code }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+      const parsed = JSON.parse(content);
+      let code = parsed.code || "";
+      const explanation = parsed.explanation || "✅ 代码已更新";
+
+      // Ensure code starts with DOCTYPE
+      if (code && !code.startsWith("<!DOCTYPE")) {
+        const doctypeIndex = code.indexOf("<!DOCTYPE");
+        if (doctypeIndex > -1) {
+          code = code.substring(doctypeIndex);
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ code, explanation }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    } catch {
+      // Fallback: treat the whole response as code
+      let code = content;
+      
+      // Clean up if wrapped in code blocks
+      if (code.includes("```html")) {
+        code = code.split("```html")[1].split("```")[0].trim();
+      } else if (code.includes("```")) {
+        code = code.split("```")[1].split("```")[0].trim();
+      }
+
+      // Ensure it starts with DOCTYPE
+      if (!code.startsWith("<!DOCTYPE")) {
+        const doctypeIndex = code.indexOf("<!DOCTYPE");
+        if (doctypeIndex > -1) {
+          code = code.substring(doctypeIndex);
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ code, explanation: "✅ 代码已更新" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
   } catch (error) {
     console.error("ai-code-assist error:", error);
     return new Response(
