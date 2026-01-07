@@ -33,23 +33,35 @@ const weirderSuggestions = [
 ];
 
 const loadingSteps = [
-  { icon: Wand2, text: "Understanding your idea...", duration: 2000 },
-  { icon: Palette, text: "Designing the interface...", duration: 3000 },
-  { icon: Code, text: "Writing the code...", duration: 4000 },
-  { icon: Zap, text: "Adding magic touches...", duration: 2000 },
-  { icon: Gamepad2, text: "Almost ready...", duration: 1500 },
+  { icon: Wand2, text: "理解你的创意...", duration: 2000 },
+  { icon: Palette, text: "设计界面...", duration: 3000 },
+  { icon: Code, text: "编写代码...", duration: 4000 },
+  { icon: Zap, text: "添加魔法...", duration: 2000 },
+  { icon: Gamepad2, text: "即将完成...", duration: 1500 },
 ];
 
-const AICreator = () => {
+interface AICreatorProps {
+  initialPrompt?: string;
+  showSuggestions?: boolean;
+}
+
+const AICreator = ({ initialPrompt = "", showSuggestions = true }: AICreatorProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(initialPrompt);
   const [isFocused, setIsFocused] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentPrompt, setCurrentPrompt] = useState("");
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [progress, setProgress] = useState(0);
+
+  // Update input when initialPrompt changes
+  useEffect(() => {
+    if (initialPrompt) {
+      setInput(initialPrompt);
+    }
+  }, [initialPrompt]);
 
   // Animate loading steps
   useEffect(() => {
@@ -198,7 +210,7 @@ const AICreator = () => {
 
             if (error) throw error;
 
-            toast.success("Creation generated!");
+            toast.success("创作生成成功!");
             navigate(`/studio/${data.id}`);
           } catch (error) {
             console.error('Failed to save creation:', error);
@@ -217,7 +229,7 @@ const AICreator = () => {
             prompt: input.trim(),
             title: autoTitle,
           }));
-          toast.success("Creation generated!");
+          toast.success("创作生成成功!");
           navigate('/studio/new');
         }
       } else {
@@ -225,7 +237,7 @@ const AICreator = () => {
       }
     } catch (error) {
       console.error("Generation error:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to generate");
+      toast.error(error instanceof Error ? error.message : "生成失败");
     } finally {
       setIsGenerating(false);
     }
@@ -283,7 +295,7 @@ const AICreator = () => {
                   {loadingSteps[loadingStep].text}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Creating: "{currentPrompt.slice(0, 30)}{currentPrompt.length > 30 ? '...' : ''}"
+                  创建: "{currentPrompt.slice(0, 30)}{currentPrompt.length > 30 ? '...' : ''}"
                 </p>
               </div>
 
@@ -301,7 +313,7 @@ const AICreator = () => {
               
               {/* Progress percentage */}
               <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-                <span>Generating</span>
+                <span>生成中</span>
                 <span className="font-mono">{progress}%</span>
               </div>
 
@@ -379,7 +391,7 @@ const AICreator = () => {
         )}
 
         {/* Suggestions - Categorized */}
-        {!isGenerating && (
+        {!isGenerating && showSuggestions && (
           <div className="mt-5 space-y-3 animate-fade-in">
             {/* Games */}
             <div className="flex flex-wrap gap-2 justify-center">
