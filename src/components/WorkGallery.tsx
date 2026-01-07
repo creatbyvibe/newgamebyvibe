@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Play, Heart, User } from "lucide-react";
+import { Play, Heart, User, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 interface Creation {
@@ -12,18 +13,27 @@ interface Creation {
   plays: number;
   likes: number;
   is_public: boolean;
-  user_id?: string;
+  user_id: string;
 }
 
 interface WorkGalleryProps {
   showPublicOnly?: boolean;
 }
 
+const gradients = [
+  "from-primary to-highlight",
+  "from-secondary to-accent",
+  "from-accent to-info",
+  "from-info to-secondary",
+  "from-highlight to-primary",
+  "from-primary to-accent",
+];
+
 const WorkGallery = ({ showPublicOnly = true }: WorkGalleryProps) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [works, setWorks] = useState<Creation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedWork, setSelectedWork] = useState<Creation | null>(null);
   const [userLikes, setUserLikes] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -35,14 +45,12 @@ const WorkGallery = ({ showPublicOnly = true }: WorkGalleryProps) => {
 
   const fetchWorks = async () => {
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from("creations")
-        .select("id, title, prompt, html_code, plays, likes, is_public, profiles(username)")
+        .select("id, title, prompt, html_code, plays, likes, is_public, user_id")
         .eq("is_public", true)
         .order("likes", { ascending: false })
         .limit(6);
-
-      const { data, error } = await query;
 
       if (error) throw error;
       setWorks((data as Creation[]) || []);
@@ -83,7 +91,7 @@ const WorkGallery = ({ showPublicOnly = true }: WorkGalleryProps) => {
           .delete()
           .eq("user_id", user.id)
           .eq("creation_id", creationId);
-        
+
         setUserLikes((prev) => {
           const next = new Set(prev);
           next.delete(creationId);
@@ -97,7 +105,7 @@ const WorkGallery = ({ showPublicOnly = true }: WorkGalleryProps) => {
           user_id: user.id,
           creation_id: creationId,
         });
-        
+
         setUserLikes((prev) => new Set(prev).add(creationId));
         setWorks((prev) =>
           prev.map((w) => (w.id === creationId ? { ...w, likes: w.likes + 1 } : w))
@@ -108,63 +116,35 @@ const WorkGallery = ({ showPublicOnly = true }: WorkGalleryProps) => {
     }
   };
 
-  const handlePlay = async (work: Creation) => {
-    setSelectedWork(work);
-    // Increment plays
-    await supabase.rpc("increment_plays", { creation_id: work.id });
+  const handlePlay = (work: Creation) => {
+    navigate(`/creation/${work.id}`);
   };
 
   // Placeholder data when no creations exist
   const placeholderWorks = [
-    { id: "1", title: "Pixel Pong Battle", author: "Alex", plays: 1234, likes: 89, gradient: "from-primary to-highlight" },
-    { id: "2", title: "What to Eat?", author: "Sam", plays: 5678, likes: 234, gradient: "from-secondary to-accent" },
-    { id: "3", title: "Focus Timer Pro", author: "Maya", plays: 3456, likes: 156, gradient: "from-accent to-info" },
-    { id: "4", title: "Meme Factory", author: "Jordan", plays: 8901, likes: 567, gradient: "from-info to-secondary" },
-    { id: "5", title: "Type Racer", author: "Chris", plays: 2345, likes: 123, gradient: "from-highlight to-primary" },
-    { id: "6", title: "Memory Cards", author: "Taylor", plays: 4567, likes: 234, gradient: "from-primary to-accent" },
+    { id: "1", title: "Pixel Pong Battle", author: "Alex", plays: 1234, likes: 89 },
+    { id: "2", title: "What to Eat?", author: "Sam", plays: 5678, likes: 234 },
+    { id: "3", title: "Focus Timer Pro", author: "Maya", plays: 3456, likes: 156 },
+    { id: "4", title: "Meme Factory", author: "Jordan", plays: 8901, likes: 567 },
+    { id: "5", title: "Type Racer", author: "Chris", plays: 2345, likes: 123 },
+    { id: "6", title: "Memory Cards", author: "Taylor", plays: 4567, likes: 234 },
   ];
 
-  const displayWorks = works.length > 0 ? works : null;
-  const gradients = [
-    "from-primary to-highlight",
-    "from-secondary to-accent",
-    "from-accent to-info",
-    "from-info to-secondary",
-    "from-highlight to-primary",
-    "from-primary to-accent",
-  ];
-
-  if (selectedWork) {
-    return (
-      <div className="w-full">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-display font-semibold text-foreground">{selectedWork.title}</h3>
-          <button
-            onClick={() => setSelectedWork(null)}
-            className="text-sm text-primary hover:underline"
-          >
-            ← Back to gallery
-          </button>
-        </div>
-        <div className="aspect-video rounded-xl overflow-hidden border border-border shadow-medium bg-white">
-          <iframe
-            srcDoc={selectedWork.html_code}
-            className="w-full h-full border-0"
-            sandbox="allow-scripts allow-forms"
-            title={selectedWork.title}
-          />
-        </div>
-      </div>
-    );
-  }
+  const hasRealWorks = works.length > 0;
 
   return (
     <div className="w-full">
       {/* Header */}
       <div className="flex items-end justify-between mb-10">
         <div>
-          <h2 className="font-display text-foreground">Trending Creations</h2>
-          <p className="text-muted-foreground mt-2">See what others are building</p>
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingUp className="w-5 h-5 text-primary" />
+            <span className="text-sm font-medium text-primary">Trending</span>
+          </div>
+          <h2 className="font-display text-foreground">Community Creations</h2>
+          <p className="text-muted-foreground mt-2">
+            Discover and play games built by our community
+          </p>
         </div>
         <a href="#gallery" className="text-sm text-primary hover:underline font-medium">
           View all →
@@ -172,12 +152,12 @@ const WorkGallery = ({ showPublicOnly = true }: WorkGalleryProps) => {
       </div>
 
       {/* Gallery */}
-      <div className="flex gap-5 overflow-x-auto pb-4 -mx-6 px-6 scrollbar-hide">
-        {displayWorks
-          ? displayWorks.map((work, index) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {hasRealWorks
+          ? works.map((work, index) => (
               <div
                 key={work.id}
-                className="flex-shrink-0 w-64 group cursor-pointer animate-fade-in"
+                className="group cursor-pointer animate-fade-in"
                 style={{ animationDelay: `${index * 100}ms` }}
                 onClick={() => handlePlay(work)}
               >
@@ -186,6 +166,16 @@ const WorkGallery = ({ showPublicOnly = true }: WorkGalleryProps) => {
                   <div
                     className={`absolute inset-0 bg-gradient-to-br ${gradients[index % gradients.length]} opacity-30 group-hover:opacity-50 transition-opacity`}
                   />
+
+                  {/* Mini preview */}
+                  <div className="absolute inset-0 opacity-50">
+                    <iframe
+                      srcDoc={work.html_code}
+                      className="w-full h-full border-0 pointer-events-none"
+                      sandbox=""
+                      title={work.title}
+                    />
+                  </div>
 
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-foreground/10 backdrop-blur-sm">
                     <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-glow">
@@ -204,7 +194,9 @@ const WorkGallery = ({ showPublicOnly = true }: WorkGalleryProps) => {
                         userLikes.has(work.id) ? "text-primary" : "text-foreground"
                       }`}
                     >
-                      <Heart className={`w-3 h-3 ${userLikes.has(work.id) ? "fill-current" : ""}`} />
+                      <Heart
+                        className={`w-3 h-3 ${userLikes.has(work.id) ? "fill-current" : ""}`}
+                      />
                       {work.likes}
                     </button>
                   </div>
@@ -227,15 +219,17 @@ const WorkGallery = ({ showPublicOnly = true }: WorkGalleryProps) => {
           : placeholderWorks.map((work, index) => (
               <div
                 key={work.id}
-                className="flex-shrink-0 w-64 group cursor-pointer animate-fade-in opacity-60"
+                className="group animate-fade-in opacity-60"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 <div className="relative aspect-video rounded-xl overflow-hidden mb-3 border border-border shadow-soft">
                   <div
-                    className={`absolute inset-0 bg-gradient-to-br ${work.gradient} opacity-30`}
+                    className={`absolute inset-0 bg-gradient-to-br ${gradients[index % gradients.length]} opacity-30`}
                   />
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-xs text-muted-foreground">Coming soon</span>
+                    <span className="text-xs text-muted-foreground bg-background/80 px-3 py-1 rounded-full">
+                      Coming soon
+                    </span>
                   </div>
                   <div className="absolute bottom-2 left-2 right-2 flex items-center gap-2 text-xs">
                     <span className="flex items-center gap-1 bg-background/90 backdrop-blur-sm px-2 py-1 rounded-full text-foreground">
