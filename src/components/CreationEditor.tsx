@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import CodeEditor from "./CodeEditor";
+import AICodeAssistant from "./AICodeAssistant";
 
 interface CreationEditorProps {
   initialCode: string;
@@ -210,10 +211,17 @@ const CreationEditor = ({
         {/* Content */}
         <div className={`flex-1 flex ${isFullscreen ? "h-[calc(100vh-57px)]" : "h-[500px]"}`}>
           {showCode ? (
-            <div className="flex-1 flex">
+            <div className="flex-1 flex relative">
               {/* Code Editor */}
-              <div className="w-1/2 border-r border-border">
+              <div className="w-1/2 border-r border-border relative">
                 <CodeEditor code={code} onCodeChange={setCode} onRun={handleRun} />
+                <AICodeAssistant 
+                  currentCode={code} 
+                  onCodeUpdate={(newCode) => {
+                    setCode(newCode);
+                    setPreviewCode(newCode);
+                  }} 
+                />
               </div>
               {/* Preview */}
               <div className="w-1/2 bg-white">
