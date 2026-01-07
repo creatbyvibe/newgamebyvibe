@@ -26,28 +26,28 @@ const TemplateGames = () => {
     : templateGames.filter(g => g.category === filter);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col gap-4">
         <div>
-          <h2 className="font-display text-xl font-bold text-foreground flex items-center gap-2">
-            <Gamepad2 className="w-6 h-6 text-primary" />
+          <h2 className="font-display text-lg sm:text-xl font-bold text-foreground flex items-center gap-2">
+            <Gamepad2 className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             Template Games
           </h2>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Play, remix, and share these original games
           </p>
         </div>
 
         {/* Category Filter */}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {categories.map((cat) => (
             <Button
               key={cat}
               variant={filter === cat ? "default" : "outline"}
               size="sm"
               onClick={() => setFilter(cat)}
-              className="capitalize"
+              className="capitalize text-xs sm:text-sm h-8"
             >
               {cat}
             </Button>
@@ -56,14 +56,14 @@ const TemplateGames = () => {
       </div>
 
       {/* Games Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {filteredGames.map((game) => (
           <div
             key={game.id}
-            className="group bg-background rounded-2xl border border-border overflow-hidden hover:shadow-lg transition-all"
+            className="group bg-background rounded-xl sm:rounded-2xl border border-border overflow-hidden hover:shadow-lg transition-all"
           >
             {/* Preview */}
-            <div className="aspect-video relative overflow-hidden bg-muted">
+            <div className="aspect-video relative overflow-hidden bg-muted" onClick={() => setSelectedGame(game)}>
               <iframe
                 srcDoc={game.code}
                 className="w-full h-full border-0 pointer-events-none scale-[0.5] origin-top-left"
@@ -74,41 +74,45 @@ const TemplateGames = () => {
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
               
               {/* Category Badge */}
-              <div className={`absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-white bg-gradient-to-r ${categoryColors[game.category]}`}>
+              <div className={`absolute top-2 left-2 sm:top-3 sm:left-3 flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium text-white bg-gradient-to-r ${categoryColors[game.category]}`}>
                 {categoryIcons[game.category]}
-                {game.category}
+                <span className="hidden xs:inline">{game.category}</span>
               </div>
 
-              {/* Play Button Overlay */}
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              {/* Play Button Overlay - Always visible on mobile */}
+              <div className="absolute inset-0 flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                 <Button
-                  size="lg"
-                  onClick={() => setSelectedGame(game)}
-                  className="gap-2 shadow-lg"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedGame(game);
+                  }}
+                  className="gap-1.5 shadow-lg"
                 >
-                  <Play className="w-5 h-5" />
-                  Play Now
+                  <Play className="w-4 h-4" />
+                  <span className="hidden sm:inline">Play Now</span>
+                  <span className="sm:hidden">Play</span>
                 </Button>
               </div>
             </div>
 
             {/* Info */}
-            <div className="p-4">
-              <h3 className="font-display font-semibold text-foreground group-hover:text-primary transition-colors">
+            <div className="p-3 sm:p-4">
+              <h3 className="font-display font-semibold text-sm sm:text-base text-foreground group-hover:text-primary transition-colors">
                 {game.title}
               </h3>
-              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2">
                 {game.description}
               </p>
               
-              <div className="flex items-center gap-2 mt-4">
+              <div className="flex items-center gap-2 mt-3 sm:mt-4">
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => setSelectedGame(game)}
-                  className="flex-1 gap-1.5"
+                  className="flex-1 gap-1.5 h-8 text-xs sm:text-sm"
                 >
-                  <Play className="w-3.5 h-3.5" />
+                  <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   Play
                 </Button>
               </div>
