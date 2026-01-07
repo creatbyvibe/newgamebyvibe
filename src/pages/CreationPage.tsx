@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/Navbar";
 import ShareButtons from "@/components/ShareButtons";
+import CommentsSection from "@/components/CommentsSection";
 import {
   Play,
   Heart,
@@ -16,6 +17,7 @@ import {
   User,
   Calendar,
   Eye,
+  MessageCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -361,6 +363,17 @@ const CreationPage = () => {
               <ShareButtons url={shareUrl} title={creation.title} text={shareText} variant="large" />
             </div>
           </div>
+        </div>
+
+        {/* Comments Section */}
+        <div className="max-w-5xl mx-auto px-6 mt-8">
+          <div className="flex items-center gap-2 mb-6">
+            <MessageCircle className="w-5 h-5 text-primary" />
+            <h2 className="font-display font-semibold text-xl text-foreground">
+              Reviews & Comments
+            </h2>
+          </div>
+          <CommentsSection creationId={creation.id} />
         </div>
       </main>
     </div>
