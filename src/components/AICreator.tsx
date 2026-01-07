@@ -27,9 +27,8 @@ const AICreator = () => {
             : "border-border hover:border-primary/30"
         }`}
       >
-        {/* Textarea */}
         <div className="p-5 pb-16">
-          <div className="flex items-start gap-3">
+          <div className="flex items-start gap-4">
             <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center flex-shrink-0">
               <Sparkles className="w-5 h-5 text-primary-foreground" />
             </div>
@@ -39,7 +38,7 @@ const AICreator = () => {
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               placeholder="Describe what you want to create..."
-              className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground resize-none outline-none text-base min-h-[70px]"
+              className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground resize-none outline-none text-base leading-relaxed min-h-[70px]"
               rows={2}
             />
           </div>
@@ -50,11 +49,7 @@ const AICreator = () => {
           <span className="text-sm text-muted-foreground hidden sm:block">
             Press Enter to create
           </span>
-          <Button
-            size="sm"
-            className="gap-2"
-            disabled={!input.trim()}
-          >
+          <Button size="sm" className="gap-2" disabled={!input.trim()}>
             Create
             <ArrowRight className="w-4 h-4" />
           </Button>
@@ -62,7 +57,7 @@ const AICreator = () => {
       </div>
 
       {/* Suggestions */}
-      <div className="mt-4 flex flex-wrap gap-2 justify-center">
+      <div className="mt-5 flex flex-wrap gap-2 justify-center">
         {suggestions.map((suggestion, index) => (
           <button
             key={index}
