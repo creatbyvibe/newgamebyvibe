@@ -94,6 +94,10 @@ const GameLab = () => {
     setGeneratedGame(null);
 
     try {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:87',message:'handleFusion started',data:{selectedGamesCount:selectedGames.length,selectedGames:selectedGames.map(g=>g.name),supabaseUrl:import.meta.env.VITE_SUPABASE_URL,hasSupabaseKey:!!import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
+
       const gameNames = selectedGames.map(g => g.name).join(" + ");
       const prompt = `Create a unique fusion game that combines: ${selectedGames.map(g => `${g.name} (${g.description})`).join(" and ")}.
       
@@ -102,17 +106,29 @@ Make sure the game is fully playable with clear instructions shown on screen.
 Use a fun, colorful visual style.`;
 
       // First, get the AI to generate scores and concept
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:105',message:'Before game-lab-fusion invoke',data:{functionName:'game-lab-fusion',body:selectedGames.map(g => ({ name: g.name, description: g.description }))},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+
       const conceptResponse = await supabase.functions.invoke('game-lab-fusion', {
         body: {
           games: selectedGames.map(g => ({ name: g.name, description: g.description })),
         },
       });
 
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:111',message:'After game-lab-fusion invoke',data:{hasError:!!conceptResponse.error,error:conceptResponse.error,hasData:!!conceptResponse.data,dataKeys:conceptResponse.data?Object.keys(conceptResponse.data):[]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+
       if (conceptResponse.error) throw conceptResponse.error;
 
       const concept = conceptResponse.data;
 
       // Then generate the actual game code
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:116',message:'Before generate-creation fetch',data:{url:`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-creation`,hasAuth:!!import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
+
       const codeResponse = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-creation`,
         {
@@ -127,7 +143,17 @@ Use a fun, colorful visual style.`;
         }
       );
 
-      if (!codeResponse.ok) throw new Error("Failed to generate game");
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:130',message:'After generate-creation fetch',data:{ok:codeResponse.ok,status:codeResponse.status,statusText:codeResponse.statusText,hasBody:!!codeResponse.body,contentType:codeResponse.headers.get('content-type')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
+
+      if (!codeResponse.ok) {
+        const errorText = await codeResponse.text();
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:133',message:'generate-creation fetch failed',data:{status:codeResponse.status,errorText},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+        // #endregion
+        throw new Error(`Failed to generate game: ${codeResponse.status} ${errorText}`);
+      }
 
       const reader = codeResponse.body?.getReader();
       if (!reader) throw new Error("No response body");
@@ -156,9 +182,15 @@ Use a fun, colorful visual style.`;
 
           try {
             const parsed = JSON.parse(jsonStr);
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:157',message:'Parsing SSE chunk',data:{hasChoices:!!parsed.choices,choicesLength:parsed.choices?.length,hasDelta:!!parsed.choices?.[0]?.delta,hasContent:!!parsed.choices?.[0]?.delta?.content,parsedKeys:Object.keys(parsed)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+            // #endregion
             const content = parsed.choices?.[0]?.delta?.content;
             if (content) fullContent += content;
-          } catch {
+          } catch (parseError) {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:162',message:'SSE parse error',data:{error:parseError instanceof Error?parseError.message:String(parseError),jsonStr:jsonStr.substring(0,200)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+            // #endregion
             buffer = line + "\n" + buffer;
             break;
           }
@@ -182,8 +214,15 @@ Use a fun, colorful visual style.`;
         code: htmlCode,
       });
 
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:185',message:'Fusion success',data:{hasCode:!!htmlCode,codeLength:htmlCode.length,hasConcept:!!concept},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'ALL'})}).catch(()=>{});
+      // #endregion
+
       toast.success("融合游戏生成成功！");
     } catch (error) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:187',message:'Fusion error caught',data:{error:error instanceof Error?error.message:String(error),errorStack:error instanceof Error?error.stack:undefined},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
       console.error("Fusion error:", error);
       toast.error("融合失败，请重试");
     } finally {
