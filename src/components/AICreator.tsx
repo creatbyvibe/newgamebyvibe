@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sparkles, ArrowRight, Wand2, Code, Palette, Zap, Gamepad2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import AuthModal from "./AuthModal";
-import CreationEditor from "./CreationEditor";
 import DesignAssistant from "./DesignAssistant";
 
 // Game-focused suggestions to inspire creativity
@@ -41,10 +42,10 @@ const loadingSteps = [
 
 const AICreator = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [input, setInput] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [currentPrompt, setCurrentPrompt] = useState("");
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
@@ -95,7 +96,6 @@ const AICreator = () => {
     if (!input.trim() || isGenerating) return;
 
     setIsGenerating(true);
-    setGeneratedCode(null);
     setCurrentPrompt(input.trim());
 
     try {
@@ -176,8 +176,50 @@ const AICreator = () => {
       if (htmlCode && htmlCode.includes("<!DOCTYPE html")) {
         // Small delay to show 100% completion
         await new Promise(resolve => setTimeout(resolve, 300));
-        setGeneratedCode(htmlCode);
-        toast.success("Creation generated!");
+        
+        // Auto-generate title from prompt
+        const autoTitle = input.trim().slice(0, 50) + (input.trim().length > 50 ? '...' : '');
+        
+        if (user) {
+          // Logged in: Create draft in database and navigate
+          try {
+            const { data, error } = await supabase
+              .from('creations')
+              .insert({
+                user_id: user.id,
+                title: autoTitle,
+                prompt: input.trim(),
+                html_code: htmlCode,
+                status: 'draft',
+                is_public: false,
+              })
+              .select()
+              .single();
+
+            if (error) throw error;
+
+            toast.success("Creation generated!");
+            navigate(`/studio/${data.id}`);
+          } catch (error) {
+            console.error('Failed to save creation:', error);
+            // Fallback to session storage
+            sessionStorage.setItem('pending_creation', JSON.stringify({
+              code: htmlCode,
+              prompt: input.trim(),
+              title: autoTitle,
+            }));
+            navigate('/studio/new');
+          }
+        } else {
+          // Not logged in: Store in session storage
+          sessionStorage.setItem('pending_creation', JSON.stringify({
+            code: htmlCode,
+            prompt: input.trim(),
+            title: autoTitle,
+          }));
+          toast.success("Creation generated!");
+          navigate('/studio/new');
+        }
       } else {
         throw new Error("Could not extract valid HTML");
       }
@@ -189,32 +231,8 @@ const AICreator = () => {
     }
   };
 
-  const handleClose = () => {
-    setGeneratedCode(null);
-    setInput("");
-    setCurrentPrompt("");
-  };
-
-  const handleSaved = (id: string) => {
-    toast.success("Your creation has been saved to your gallery!");
-  };
-
-  // Show editor when code is generated
-  if (generatedCode) {
-    return (
-      <>
-        <CreationEditor
-          initialCode={generatedCode}
-          prompt={currentPrompt}
-          onClose={handleClose}
-          onSaved={handleSaved}
-        />
-        <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
-      </>
-    );
-  }
-
   const CurrentIcon = loadingSteps[loadingStep].icon;
+
 
   return (
     <>
