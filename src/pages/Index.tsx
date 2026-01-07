@@ -77,30 +77,22 @@ const Index = () => {
         <div className="relative z-10 w-full max-w-4xl mx-auto">
           <div className="flex flex-col items-center text-center mb-12">
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 bg-primary/10 rounded-full px-4 py-1.5 mb-8 animate-fade-in">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium text-primary">
+            <div className="inline-flex items-center gap-2 bg-primary/10 rounded-full px-4 py-1.5 mb-6 animate-fade-in">
+              <Sparkles className="w-3.5 h-3.5 text-primary" />
+              <span className="text-sm font-medium text-primary tracking-wide">
                 Create anything with AI
               </span>
             </div>
 
-            {/* Title */}
-            <h1
-              className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-foreground mb-4 animate-fade-in tracking-tight"
-              style={{ animationDelay: "100ms" }}
-            >
-              Create by Vibe,
-            </h1>
-            <h1
-              className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gradient-primary mb-8 animate-fade-in tracking-tight"
-              style={{ animationDelay: "150ms" }}
-            >
-              Share the Joy
+            {/* Title - Using display font with proper hierarchy */}
+            <h1 className="font-display animate-fade-in" style={{ animationDelay: "100ms" }}>
+              <span className="block text-foreground">Create by Vibe,</span>
+              <span className="block text-gradient-primary mt-1">Share the Joy</span>
             </h1>
 
-            {/* Subtitle */}
+            {/* Subtitle - Body font with proper contrast */}
             <p
-              className="text-lg text-muted-foreground max-w-md leading-relaxed animate-fade-in"
+              className="text-lg text-muted-foreground max-w-md mt-6 animate-fade-in"
               style={{ animationDelay: "200ms" }}
             >
               Turn your ideas into fun games and tools in minutes.
@@ -142,11 +134,11 @@ const Index = () => {
       {/* Templates Section */}
       <section id="explore" className="py-24 px-6 bg-muted/30">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-foreground mb-3">
+          <div className="text-center mb-14">
+            <h2 className="font-display text-foreground mb-4">
               Start from a template
             </h2>
-            <p className="text-muted-foreground max-w-md mx-auto">
+            <p className="text-base text-muted-foreground max-w-md mx-auto">
               Pick a starter or describe your own idea
             </p>
           </div>
@@ -183,10 +175,10 @@ const Index = () => {
             <div className="absolute inset-0 gradient-fun" />
             
             <div className="relative z-10 p-12 md:p-16 text-center">
-              <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
+              <h2 className="font-display text-2xl md:text-3xl text-white mb-4">
                 Ready to create something fun?
               </h2>
-              <p className="text-white/80 mb-8 max-w-sm mx-auto">
+              <p className="text-white/80 mb-8 max-w-sm mx-auto text-base">
                 Join 10,000+ creators turning ideas into reality
               </p>
               <Button
@@ -207,11 +199,11 @@ const Index = () => {
           <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-8">
             {/* Logo */}
             <div>
-              <div className="flex items-baseline">
-                <span className="font-extrabold text-xl tracking-tight text-gradient-primary">
+              <div className="flex items-baseline gap-0">
+                <span className="font-display font-bold text-xl tracking-tight text-gradient-primary">
                   byvibe
                 </span>
-                <span className="font-extrabold text-xl tracking-tight text-muted-foreground">
+                <span className="font-display font-bold text-xl tracking-tight text-foreground/50">
                   .ai
                 </span>
               </div>

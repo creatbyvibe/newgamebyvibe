@@ -22,12 +22,12 @@ const WorkGallery = () => {
   return (
     <div className="w-full">
       {/* Header */}
-      <div className="flex items-end justify-between mb-8">
+      <div className="flex items-end justify-between mb-10">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">
+          <h2 className="font-display text-foreground">
             Trending Creations
           </h2>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-muted-foreground mt-2">
             See what others are building
           </p>
         </div>
@@ -74,10 +74,10 @@ const WorkGallery = () => {
             {/* Info */}
             <div className="flex items-start justify-between">
               <div>
-                <h4 className="text-sm font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                <h4 className="font-display text-sm font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
                   {work.title}
                 </h4>
-                <p className="text-xs text-muted-foreground mt-0.5">by {work.author}</p>
+                <p className="text-xs text-muted-foreground mt-1">by {work.author}</p>
               </div>
               <button className="p-2 rounded-lg hover:bg-muted transition-colors opacity-0 group-hover:opacity-100">
                 <GitFork className="w-4 h-4 text-muted-foreground hover:text-primary" />

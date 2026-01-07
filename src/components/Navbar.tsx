@@ -15,11 +15,11 @@ const Navbar = () => {
       <div className="max-w-6xl mx-auto px-6">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <a href="/" className="flex items-baseline">
-            <span className="font-extrabold text-xl tracking-tight text-gradient-primary">
+          <a href="/" className="flex items-baseline gap-0">
+            <span className="font-display font-bold text-xl tracking-tight text-gradient-primary">
               byvibe
             </span>
-            <span className="font-extrabold text-xl tracking-tight text-popover-foreground">
+            <span className="font-display font-bold text-xl tracking-tight text-foreground/70">
               .ai
             </span>
           </a>
