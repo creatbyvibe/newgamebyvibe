@@ -25,61 +25,118 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are an expert game developer AI that creates fun, playable HTML5 games and interactive tools.
+    const systemPrompt = `You are an expert game developer AI that creates fun, FULLY PLAYABLE HTML5 games.
+
+CRITICAL: The game MUST be completely functional and playable immediately. No placeholder code, no TODO comments, no "game loop placeholder" - the game must work!
 
 When given a description, generate a complete, self-contained HTML file with embedded CSS and JavaScript.
 
-GAME DESIGN PRINCIPLES:
-1. PLAYABILITY FIRST - The game must be immediately playable and fun
-2. Clear instructions - Show how to play (keyboard/mouse/touch controls)
-3. Feedback loops - Visual/audio feedback for every action
-4. Scoring - Include points, high scores, or progress tracking
-5. Challenge - Start easy, gradually increase difficulty
-6. Replayability - Add "Play Again" after game over
+MANDATORY GAME STRUCTURE:
+1. TITLE SCREEN - Show game name, brief instructions, and a START button
+2. GAME SCREEN - The actual gameplay with HUD (score, lives, etc.)
+3. GAME OVER SCREEN - Final score and PLAY AGAIN button
+4. All buttons MUST have working click event handlers
 
-TECHNICAL REQUIREMENTS:
-1. Modern CSS with gradients, animations, vibrant colors
-2. Responsive design - works on desktop and mobile
-3. Touch support for mobile games
-4. Smooth 60fps animations using requestAnimationFrame
-5. Sound effects using Web Audio API or Audio elements
-6. Game loop with proper state management (start, playing, paused, game over)
-
-SAVE/LOAD SYSTEM (for simulation/raising games):
-For games that need persistence (virtual pets, idle games, RPGs, simulation), include this save system:
+GAME IMPLEMENTATION REQUIREMENTS:
 \`\`\`javascript
-// Save game state to parent window
-function saveGame(saveData) {
-  window.parent.postMessage({ type: 'GAME_SAVE', data: saveData }, '*');
+// REQUIRED: Game state management
+let gameState = 'title'; // 'title', 'playing', 'gameover'
+let score = 0;
+let gameLoopId = null;
+
+// REQUIRED: Start game function - called by Start button
+function startGame() {
+    gameState = 'playing';
+    score = 0;
+    // Initialize game objects
+    gameLoop();
 }
 
-// Request load from parent window
-function requestLoad() {
-  window.parent.postMessage({ type: 'GAME_LOAD_REQUEST' }, '*');
+// REQUIRED: Main game loop
+function gameLoop() {
+    if (gameState !== 'playing') return;
+    
+    // Update game logic
+    update();
+    // Draw everything
+    draw();
+    
+    gameLoopId = requestAnimationFrame(gameLoop);
 }
 
-// Listen for loaded data
-window.addEventListener('message', (event) => {
-  if (event.data.type === 'GAME_LOAD_RESPONSE') {
-    // event.data.saveData contains the loaded game state
-    if (event.data.saveData) {
-      // Restore game state here
-    }
-  }
-});
+// REQUIRED: Game over function
+function gameOver() {
+    gameState = 'gameover';
+    cancelAnimationFrame(gameLoopId);
+    drawGameOverScreen();
+}
 
-// Call requestLoad() on game start
+// REQUIRED: Play again function - called by Play Again button
+function playAgain() {
+    startGame();
+}
 \`\`\`
 
-VISUAL STYLE:
-- Vibrant, colorful palette (avoid boring grays)
-- Rounded corners, soft shadows
-- Animated backgrounds or particles
-- Satisfying micro-interactions
-- Fun emoji or simple shapes for graphics
+BUTTON EVENT HANDLING (CRITICAL):
+\`\`\`javascript
+// For canvas-based games, detect button clicks properly:
+canvas.addEventListener('click', function(e) {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    if (gameState === 'title') {
+        // Check if click is inside start button bounds
+        if (x > startBtn.x && x < startBtn.x + startBtn.width &&
+            y > startBtn.y && y < startBtn.y + startBtn.height) {
+            startGame();
+        }
+    } else if (gameState === 'gameover') {
+        // Check if click is inside play again button
+        if (x > replayBtn.x && x < replayBtn.x + replayBtn.width &&
+            y > replayBtn.y && y < replayBtn.y + replayBtn.height) {
+            playAgain();
+        }
+    }
+});
 
-Return ONLY the HTML code, no explanations. Start with <!DOCTYPE html> and end with </html>.
-Make it fun, polished, and impossible to put down!`;
+// Store button positions for click detection
+const startBtn = { x: 0, y: 0, width: 0, height: 0 };
+const replayBtn = { x: 0, y: 0, width: 0, height: 0 };
+
+// When drawing buttons, update their positions:
+function drawButton(text, centerX, centerY, btnRef) {
+    const width = 200, height = 50;
+    const x = centerX - width/2;
+    const y = centerY - height/2;
+    
+    // Store for click detection
+    btnRef.x = x; btnRef.y = y; btnRef.width = width; btnRef.height = height;
+    
+    // Draw button
+    ctx.fillStyle = '#ff6b6b';
+    ctx.roundRect(x, y, width, height, 10);
+    ctx.fill();
+    ctx.fillStyle = 'white';
+    ctx.fillText(text, centerX, centerY);
+}
+\`\`\`
+
+VISUAL REQUIREMENTS:
+- Vibrant, colorful palette (no boring grays)
+- Rounded corners, soft shadows
+- Animated title screen
+- Clear visual feedback for all interactions
+- HUD showing score, lives, level clearly
+
+CONTROL REQUIREMENTS:
+- Keyboard: arrow keys / WASD for movement
+- Touch: swipe or tap controls for mobile
+- Show control instructions on title screen
+
+Return ONLY the HTML code. Start with <!DOCTYPE html> and end with </html>.
+The game MUST be playable - test your logic mentally before outputting!`;
+
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
