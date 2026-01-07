@@ -62,15 +62,17 @@ const AICodeAssistant = ({ currentCode, onCodeUpdate }: AICodeAssistantProps) =>
 
   if (!isOpen) {
     return (
-      <Button
-        onClick={() => setIsOpen(true)}
-        size="sm"
-        variant="outline"
-        className="gap-2 bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/20 hover:border-primary/40"
-      >
-        <Wand2 className="w-4 h-4 text-primary" />
-        <span className="text-primary">AI Assist</span>
-      </Button>
+      <div className="absolute bottom-4 left-4 z-10">
+        <Button
+          onClick={() => setIsOpen(true)}
+          size="sm"
+          variant="outline"
+          className="gap-2 bg-background/95 backdrop-blur-sm shadow-lg border-primary/30 hover:border-primary/50"
+        >
+          <Wand2 className="w-4 h-4 text-primary" />
+          <span className="text-primary font-medium">AI Assist</span>
+        </Button>
+      </div>
     );
   }
 
