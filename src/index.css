@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,70 +6,69 @@
 
 @layer base {
   :root {
-    /* Dark cool theme - perfect for "摸鱼" vibes */
-    --background: 240 10% 6%;
-    --foreground: 0 0% 98%;
+    /* Bright, modern, playful theme */
+    --background: 0 0% 100%;
+    --foreground: 240 10% 10%;
 
-    /* Cards with subtle elevation */
-    --card: 240 10% 10%;
-    --card-foreground: 0 0% 98%;
+    /* Cards */
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 10%;
 
-    --popover: 240 10% 10%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 10%;
 
-    /* Neon orange as primary */
-    --primary: 24 100% 55%;
+    /* Vibrant coral-orange as primary */
+    --primary: 16 100% 60%;
     --primary-foreground: 0 0% 100%;
 
-    /* Electric cyan as secondary */
-    --secondary: 175 80% 50%;
-    --secondary-foreground: 240 10% 6%;
+    /* Electric violet as secondary */
+    --secondary: 270 85% 65%;
+    --secondary-foreground: 0 0% 100%;
 
-    /* Dark muted */
-    --muted: 240 10% 15%;
-    --muted-foreground: 240 5% 55%;
+    /* Subtle warm gray for muted */
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 5% 45%;
 
-    /* Neon mint green accent */
-    --accent: 160 85% 50%;
-    --accent-foreground: 240 10% 6%;
+    /* Bright teal accent */
+    --accent: 172 80% 45%;
+    --accent-foreground: 0 0% 100%;
 
-    /* Electric purple for highlights */
-    --highlight: 270 80% 65%;
-    --highlight-foreground: 0 0% 100%;
+    /* Playful yellow for highlights */
+    --highlight: 45 100% 55%;
+    --highlight-foreground: 240 10% 10%;
 
-    /* Electric blue for info */
+    /* Sky blue for info */
     --info: 210 100% 60%;
     --info-foreground: 0 0% 100%;
 
     --destructive: 0 85% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 10% 18%;
-    --input: 240 10% 18%;
-    --ring: 24 100% 55%;
+    --border: 240 5% 90%;
+    --input: 240 5% 90%;
+    --ring: 16 100% 60%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
-    /* Neon gradients */
-    --gradient-neon: linear-gradient(135deg, hsl(24 100% 55%) 0%, hsl(45 100% 55%) 100%);
-    --gradient-cyber: linear-gradient(135deg, hsl(175 80% 50%) 0%, hsl(210 100% 60%) 100%);
-    --gradient-sunset: linear-gradient(135deg, hsl(340 80% 55%) 0%, hsl(24 100% 55%) 100%);
-    --gradient-electric: linear-gradient(135deg, hsl(270 80% 65%) 0%, hsl(210 100% 60%) 100%);
+    /* Modern gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(16 100% 60%) 0%, hsl(45 100% 55%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(270 85% 65%) 0%, hsl(320 85% 60%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(172 80% 45%) 0%, hsl(200 90% 55%) 100%);
+    --gradient-fun: linear-gradient(135deg, hsl(16 100% 60%) 0%, hsl(270 85% 65%) 100%);
 
-    /* Neo-brutalism shadows */
-    --shadow-brutal: 4px 4px 0px hsl(24 100% 55%);
-    --shadow-brutal-hover: 6px 6px 0px hsl(24 100% 55%);
-    --shadow-glow: 0 0 30px hsl(24 100% 55% / 0.4);
-    --shadow-card: 0 4px 20px hsl(0 0% 0% / 0.3);
+    /* Modern shadows */
+    --shadow-soft: 0 4px 20px hsl(240 10% 10% / 0.08);
+    --shadow-medium: 0 8px 30px hsl(240 10% 10% / 0.12);
+    --shadow-glow: 0 0 40px hsl(16 100% 60% / 0.25);
 
-    --sidebar-background: 240 10% 8%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 24 100% 55%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 240 10% 10%;
+    --sidebar-primary: 16 100% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 160 85% 50%;
-    --sidebar-accent-foreground: 240 10% 6%;
-    --sidebar-border: 240 10% 18%;
-    --sidebar-ring: 24 100% 55%;
+    --sidebar-accent: 172 80% 45%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 240 5% 90%;
+    --sidebar-ring: 16 100% 60%;
   }
 }
 
@@ -84,52 +83,48 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Sora', sans-serif;
   }
 }
 
 @layer utilities {
-  .gradient-neon {
-    background: var(--gradient-neon);
+  .gradient-primary {
+    background: var(--gradient-primary);
   }
   
-  .gradient-cyber {
-    background: var(--gradient-cyber);
+  .gradient-secondary {
+    background: var(--gradient-secondary);
   }
   
-  .gradient-sunset {
-    background: var(--gradient-sunset);
+  .gradient-accent {
+    background: var(--gradient-accent);
   }
   
-  .gradient-electric {
-    background: var(--gradient-electric);
+  .gradient-fun {
+    background: var(--gradient-fun);
   }
   
-  .shadow-brutal {
-    box-shadow: var(--shadow-brutal);
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
   }
   
-  .shadow-brutal-hover {
-    box-shadow: var(--shadow-brutal-hover);
+  .shadow-medium {
+    box-shadow: var(--shadow-medium);
   }
   
   .shadow-glow {
     box-shadow: var(--shadow-glow);
   }
   
-  .shadow-card {
-    box-shadow: var(--shadow-card);
-  }
-  
-  .text-gradient-neon {
-    background: var(--gradient-neon);
+  .text-gradient-primary {
+    background: var(--gradient-primary);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
-  .text-gradient-cyber {
-    background: var(--gradient-cyber);
+  .text-gradient-fun {
+    background: var(--gradient-fun);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -137,79 +132,59 @@
 }
 
 @layer components {
-  /* Neo-brutalism card hover */
-  .card-brutal {
-    @apply border-2 border-foreground/20 transition-all duration-200;
+  /* Hover lift effect */
+  .hover-lift {
+    @apply transition-all duration-300;
   }
   
-  .card-brutal:hover {
-    box-shadow: var(--shadow-brutal-hover);
-    transform: translate(-3px, -3px);
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-medium);
   }
 
-  /* Glowing border effect */
-  .glow-border {
-    position: relative;
-  }
-  
-  .glow-border::before {
-    content: '';
-    position: absolute;
-    inset: -2px;
-    background: var(--gradient-neon);
-    border-radius: inherit;
-    z-index: -1;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-  
-  .glow-border:hover::before {
-    opacity: 1;
-  }
-
-  /* Pulse animation for CTAs */
-  @keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 20px hsl(24 100% 55% / 0.3); }
-    50% { box-shadow: 0 0 40px hsl(24 100% 55% / 0.6); }
-  }
-  
+  /* Animations */
   @keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-12px) rotate(2deg); }
   }
   
-  @keyframes shimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
+  @keyframes pulse-soft {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
   }
 
   @keyframes wiggle {
     0%, 100% { transform: rotate(0deg); }
-    25% { transform: rotate(-3deg); }
-    75% { transform: rotate(3deg); }
+    25% { transform: rotate(-5deg); }
+    75% { transform: rotate(5deg); }
+  }
+
+  @keyframes bounce-in {
+    0% { transform: scale(0.9); opacity: 0; }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); opacity: 1; }
   }
   
   .animate-float {
-    animation: float 3s ease-in-out infinite;
+    animation: float 4s ease-in-out infinite;
   }
   
-  .animate-pulse-glow {
-    animation: pulse-glow 2s ease-in-out infinite;
-  }
-
-  .animate-shimmer {
-    background: linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.1), transparent);
-    background-size: 200% 100%;
-    animation: shimmer 2s infinite;
+  .animate-pulse-soft {
+    animation: pulse-soft 3s ease-in-out infinite;
   }
 
   .animate-wiggle {
     animation: wiggle 0.5s ease-in-out;
   }
 
+  .animate-bounce-in {
+    animation: bounce-in 0.5s ease-out forwards;
+  }
+
   /* Scrollbar styling */
   ::-webkit-scrollbar {
     width: 8px;
+    height: 8px;
   }
 
   ::-webkit-scrollbar-track {
