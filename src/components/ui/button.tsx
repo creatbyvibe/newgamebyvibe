@@ -9,16 +9,15 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:brightness-110 shadow-playful hover:shadow-float hover:-translate-y-0.5",
+        default: "bg-primary text-primary-foreground hover:brightness-110 shadow-glow hover:-translate-y-0.5",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline: "border-2 border-primary bg-transparent text-primary hover:bg-primary hover:text-primary-foreground",
-        secondary: "bg-secondary text-secondary-foreground hover:brightness-105 shadow-card",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
+        outline: "border-2 border-border bg-transparent text-foreground hover:border-primary hover:text-primary",
+        secondary: "bg-secondary text-secondary-foreground hover:brightness-105",
+        ghost: "hover:bg-muted hover:text-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        fun: "gradient-fun text-primary-foreground hover:brightness-110 shadow-playful hover:shadow-float hover:-translate-y-1 animate-pulse-glow",
-        mint: "gradient-mint text-accent-foreground hover:brightness-110 shadow-card hover:shadow-float hover:-translate-y-0.5",
-        sunset: "gradient-sunset text-primary-foreground hover:brightness-110 shadow-playful hover:shadow-float hover:-translate-y-0.5",
-        playful: "bg-card border-2 border-border text-foreground hover:border-primary hover:shadow-float hover:-translate-y-1",
+        neon: "gradient-neon text-primary-foreground hover:brightness-110 shadow-glow hover:-translate-y-1",
+        cyber: "gradient-cyber text-secondary-foreground hover:brightness-110 hover:-translate-y-0.5",
+        brutal: "bg-card border-2 border-foreground text-foreground shadow-brutal hover:shadow-brutal-hover hover:-translate-x-1 hover:-translate-y-1",
       },
       size: {
         default: "h-11 px-6 py-2",
