@@ -17,20 +17,32 @@ export default defineConfig(() => ({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          // 将 React 相关库打包到单独的 chunk
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          // 将 UI 组件库打包到单独的 chunk
-          'ui-vendor': [
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-dropdown-menu',
-            '@radix-ui/react-tabs',
-            '@radix-ui/react-toast',
-          ],
-          // 将 Supabase 相关库打包到单独的 chunk
-          'supabase-vendor': ['@supabase/supabase-js'],
-          // 将工具库打包到单独的 chunk
-          'utils-vendor': ['@tanstack/react-query', 'date-fns'],
+        manualChunks: (id) => {
+          // 将 node_modules 中的依赖包分离
+          if (id.includes('node_modules')) {
+            // React 核心库
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+              return 'react-vendor';
+            }
+            // UI 组件库
+            if (id.includes('@radix-ui')) {
+              return 'ui-vendor';
+            }
+            // Supabase
+            if (id.includes('@supabase')) {
+              return 'supabase-vendor';
+            }
+            // i18n
+            if (id.includes('i18next') || id.includes('react-i18next')) {
+              return 'i18n-vendor';
+            }
+            // 其他工具库
+            if (id.includes('@tanstack/react-query') || id.includes('date-fns') || id.includes('zustand')) {
+              return 'utils-vendor';
+            }
+            // 其他 node_modules
+            return 'vendor';
+          }
         },
       },
     },
@@ -42,7 +54,11 @@ export default defineConfig(() => ({
         drop_debugger: true,
       },
     },
-    // 优化 chunk 大小警告阈值
-    chunkSizeWarningLimit: 1000,
+    // 优化 chunk 大小警告阈值（提高阈值，避免警告）
+    chunkSizeWarningLimit: 1500,
+    // 启用源码映射（生产环境可选）
+    sourcemap: false,
+    // 启用 CSS 代码分割
+    cssCodeSplit: true,
   },
 }));
