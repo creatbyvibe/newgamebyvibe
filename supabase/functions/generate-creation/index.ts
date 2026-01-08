@@ -5,6 +5,106 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Helper function to build optimized prompt
+function buildOptimizedPrompt(
+  cat: any,
+  tmpl: any,
+  cfg: any,
+  userPrompt: string
+): string {
+  let optimizedPrompt = '';
+
+  // Add category-specific system prompt if available
+  if (cat?.system_prompt) {
+    optimizedPrompt += `${cat.system_prompt}\n\n`;
+  } else {
+    optimizedPrompt += `You are an expert game developer AI that creates fun, FULLY PLAYABLE HTML5 games.\n\n`;
+  }
+
+  // Add template example code as Few-Shot Learning
+  if (tmpl?.example_code) {
+    optimizedPrompt += `Here's an example of a ${tmpl.name} game:\n\n`;
+    optimizedPrompt += `<example>\n${tmpl.example_code}\n</example>\n\n`;
+    optimizedPrompt += `Create a similar game based on the following requirements:\n\n`;
+  }
+
+  // Add category-specific constraints and best practices
+  if (cat?.metadata) {
+    const metadata = typeof cat.metadata === 'string' ? JSON.parse(cat.metadata) : cat.metadata;
+    
+    // Add category few-shot examples if available
+    if (metadata.fewShotExamples && Array.isArray(metadata.fewShotExamples) && metadata.fewShotExamples.length > 0) {
+      const examples = metadata.fewShotExamples;
+      optimizedPrompt += `Here are ${examples.length} additional complete card game examples to learn from:\n\n`;
+      examples.forEach((example: string, index: number) => {
+        optimizedPrompt += `EXAMPLE ${index + 1}:\n${example}\n\n`;
+      });
+      optimizedPrompt += `Study these examples carefully. Notice:\n`;
+      optimizedPrompt += `- Complete HTML structure with DOCTYPE, html, head, body tags\n`;
+      optimizedPrompt += `- All CSS in <style> tags\n`;
+      optimizedPrompt += `- All JavaScript in <script> tags\n`;
+      optimizedPrompt += `- Fully functional game logic\n`;
+      optimizedPrompt += `- Clear visual design\n`;
+      optimizedPrompt += `- Interactive elements with event handlers\n\n`;
+    }
+    
+    if (metadata.constraints && Array.isArray(metadata.constraints) && metadata.constraints.length > 0) {
+      optimizedPrompt += `Constraints:\n`;
+      metadata.constraints.forEach((constraint: string) => {
+        optimizedPrompt += `- ${constraint}\n`;
+      });
+      optimizedPrompt += `\n`;
+    }
+
+    if (metadata.best_practices && Array.isArray(metadata.best_practices) && metadata.best_practices.length > 0) {
+      optimizedPrompt += `Best Practices:\n`;
+      metadata.best_practices.forEach((practice: string) => {
+        optimizedPrompt += `- ${practice}\n`;
+      });
+      optimizedPrompt += `\n`;
+    }
+
+    if (metadata.mechanics && Array.isArray(metadata.mechanics) && metadata.mechanics.length > 0) {
+      optimizedPrompt += `Game Mechanics:\n`;
+      metadata.mechanics.forEach((mechanic: string) => {
+        optimizedPrompt += `- ${mechanic}\n`;
+      });
+      optimizedPrompt += `\n`;
+    }
+  }
+
+  // Add template-specific configuration
+  if (tmpl?.config) {
+    const tmplConfig = typeof tmpl.config === 'string' ? JSON.parse(tmpl.config) : tmpl.config;
+    if (tmplConfig.theme) {
+      optimizedPrompt += `Theme: ${tmplConfig.theme}\n\n`;
+    }
+    if (tmplConfig.features && Array.isArray(tmplConfig.features) && tmplConfig.features.length > 0) {
+      optimizedPrompt += `Features to include:\n`;
+      tmplConfig.features.forEach((feature: string) => {
+        optimizedPrompt += `- ${feature}\n`;
+      });
+      optimizedPrompt += `\n`;
+    }
+  }
+
+  // Add user's custom prompt
+  optimizedPrompt += `User Requirements:\n${userPrompt}\n\n`;
+
+  // Add final instructions
+  optimizedPrompt += `\nInstructions:\n`;
+  optimizedPrompt += `- Generate a complete, playable HTML game\n`;
+  optimizedPrompt += `- Include all necessary HTML, CSS, and JavaScript in a single file\n`;
+  optimizedPrompt += `- Ensure the game is fully functional and interactive\n`;
+  optimizedPrompt += `- Add clear instructions for the player\n`;
+  optimizedPrompt += `- Use a fun, colorful visual style\n`;
+  optimizedPrompt += `- Make sure the game is responsive and works on different screen sizes\n`;
+  optimizedPrompt += `- Output the HTML code directly, without any markdown formatting or code blocks\n`;
+  optimizedPrompt += `- Just the raw HTML starting with <!DOCTYPE html> and ending with </html>\n`;
+
+  return optimizedPrompt;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -708,98 +808,3 @@ IMPORTANT: Output the HTML code directly, without any markdown formatting or cod
     );
   }
 });
-
-// Helper function to build optimized prompt
-function buildOptimizedPrompt(cat: any, tmpl: any, cfg: any, userPrompt: string): string {
-  let optimizedPrompt = '';
-
-  // Add category-specific system prompt if available
-  if (cat?.system_prompt) {
-    optimizedPrompt += `${cat.system_prompt}\n\n`;
-  } else {
-    optimizedPrompt += `You are an expert game developer AI that creates fun, FULLY PLAYABLE HTML5 games.\n\n`;
-  }
-
-  // Add template example code as Few-Shot Learning
-  if (tmpl?.example_code) {
-    optimizedPrompt += `Here's an example of a ${tmpl.name} game:\n\n`;
-    optimizedPrompt += `<example>\n${tmpl.example_code}\n</example>\n\n`;
-    optimizedPrompt += `Create a similar game based on the following requirements:\n\n`;
-  }
-
-  // Add category-specific constraints and best practices
-  if (cat?.metadata) {
-    const metadata = typeof cat.metadata === 'string' ? JSON.parse(cat.metadata) : cat.metadata;
-    
-    // Add category few-shot examples if available
-    if (metadata.fewShotExamples && Array.isArray(metadata.fewShotExamples) && metadata.fewShotExamples.length > 0) {
-      const examples = metadata.fewShotExamples;
-      optimizedPrompt += `Here are ${examples.length} additional complete card game examples to learn from:\n\n`;
-      examples.forEach((example: string, index: number) => {
-        optimizedPrompt += `EXAMPLE ${index + 1}:\n${example}\n\n`;
-      });
-      optimizedPrompt += `Study these examples carefully. Notice:\n`;
-      optimizedPrompt += `- Complete HTML structure with DOCTYPE, html, head, body tags\n`;
-      optimizedPrompt += `- All CSS in <style> tags\n`;
-      optimizedPrompt += `- All JavaScript in <script> tags\n`;
-      optimizedPrompt += `- Fully functional game logic\n`;
-      optimizedPrompt += `- Clear visual design\n`;
-      optimizedPrompt += `- Interactive elements with event handlers\n\n`;
-    }
-    
-    if (metadata.constraints && Array.isArray(metadata.constraints) && metadata.constraints.length > 0) {
-      optimizedPrompt += `Constraints:\n`;
-      metadata.constraints.forEach((constraint: string) => {
-        optimizedPrompt += `- ${constraint}\n`;
-      });
-      optimizedPrompt += `\n`;
-    }
-
-    if (metadata.best_practices && Array.isArray(metadata.best_practices) && metadata.best_practices.length > 0) {
-      optimizedPrompt += `Best Practices:\n`;
-      metadata.best_practices.forEach((practice: string) => {
-        optimizedPrompt += `- ${practice}\n`;
-      });
-      optimizedPrompt += `\n`;
-    }
-
-    if (metadata.mechanics && Array.isArray(metadata.mechanics) && metadata.mechanics.length > 0) {
-      optimizedPrompt += `Game Mechanics:\n`;
-      metadata.mechanics.forEach((mechanic: string) => {
-        optimizedPrompt += `- ${mechanic}\n`;
-      });
-      optimizedPrompt += `\n`;
-    }
-  }
-
-  // Add template-specific configuration
-  if (tmpl?.config) {
-    const tmplConfig = typeof tmpl.config === 'string' ? JSON.parse(tmpl.config) : tmpl.config;
-    if (tmplConfig.theme) {
-      optimizedPrompt += `Theme: ${tmplConfig.theme}\n\n`;
-    }
-    if (tmplConfig.features && Array.isArray(tmplConfig.features) && tmplConfig.features.length > 0) {
-      optimizedPrompt += `Features to include:\n`;
-      tmplConfig.features.forEach((feature: string) => {
-        optimizedPrompt += `- ${feature}\n`;
-      });
-      optimizedPrompt += `\n`;
-    }
-  }
-
-  // Add user's custom prompt
-  optimizedPrompt += `User Requirements:\n${userPrompt}\n\n`;
-
-  // Add final instructions
-  optimizedPrompt += `\nInstructions:\n`;
-  optimizedPrompt += `- Generate a complete, playable HTML game\n`;
-  optimizedPrompt += `- Include all necessary HTML, CSS, and JavaScript in a single file\n`;
-  optimizedPrompt += `- Ensure the game is fully functional and interactive\n`;
-  optimizedPrompt += `- Add clear instructions for the player\n`;
-  optimizedPrompt += `- Use a fun, colorful visual style\n`;
-  optimizedPrompt += `- Make sure the game is responsive and works on different screen sizes\n`;
-  optimizedPrompt += `- Output the HTML code directly, without any markdown formatting or code blocks\n`;
-  optimizedPrompt += `- Just the raw HTML starting with <!DOCTYPE html> and ending with </html>\n`;
-
-  return optimizedPrompt;
-}
