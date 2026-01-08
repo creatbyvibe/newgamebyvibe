@@ -490,15 +490,21 @@ const GameLab = () => {
 
           {/* Advanced Options: Category and Template Selection */}
           <div className="mb-8">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
-              className="gap-2 mb-4"
-            >
-              <Settings className="w-4 h-4" />
-              {showAdvancedOptions ? '隐藏' : '显示'}高级选项
-            </Button>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="font-display font-semibold mb-1">游戏分类与模板</h2>
+                <p className="text-sm text-muted-foreground">选择特定游戏类别（如卡牌游戏）或使用模板快速开始</p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                className="gap-2"
+              >
+                <Settings className="w-4 h-4" />
+                {showAdvancedOptions ? t('gameLab.hideAdvancedOptions') : t('gameLab.showAdvancedOptions')}
+              </Button>
+            </div>
 
             {showAdvancedOptions && (
               <Tabs defaultValue="category" className="space-y-4">

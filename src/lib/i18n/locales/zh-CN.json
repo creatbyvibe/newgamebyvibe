@@ -113,7 +113,13 @@
     "equalsQuestion": "= ???",
     "fusionPrompt": "创造一个独特的融合游戏，结合以下游戏：{{games}}。游戏应该创造性地融合每个游戏的核心机制，产生新的有趣玩法。确保游戏完全可玩，并在屏幕上显示清晰的说明。使用有趣、色彩丰富的视觉风格。",
     "fusionLabel": "融合：",
-    "minGamesHint": "至少选择 2 个游戏才能开始融合"
+    "minGamesHint": "至少选择 2 个游戏才能开始融合",
+    "showAdvancedOptions": "显示高级选项",
+    "hideAdvancedOptions": "隐藏高级选项",
+    "gameCategory": "游戏类别",
+    "templateSelection": "模板选择",
+    "selectCategoryFirst": "请先选择一个游戏类别",
+    "categoryDescription": "选择特定游戏类别（如卡牌游戏）或使用模板快速开始"
   },
   "aiCreator": {
     "understanding": "理解你的创意...",
