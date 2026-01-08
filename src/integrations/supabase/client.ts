@@ -46,14 +46,28 @@ export const supabase = createClient<Database>(
   }
 );
 
-// 验证配置的有效性
+// 验证配置的有效性并在控制台显示调试信息
 if (SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY) {
+  console.log('🔍 Supabase 配置检查:');
+  console.log('  - URL:', SUPABASE_URL);
+  console.log('  - Key 前缀:', SUPABASE_PUBLISHABLE_KEY.substring(0, 30) + '...');
+  console.log('  - Key 长度:', SUPABASE_PUBLISHABLE_KEY.length);
+  console.log('  - URL 格式:', SUPABASE_URL.startsWith('https://') ? '✅' : '❌');
+  console.log('  - Key 格式:', isValidKey(SUPABASE_PUBLISHABLE_KEY) ? '✅' : '❌');
+  
   if (!SUPABASE_URL.startsWith('https://') || SUPABASE_URL.includes('placeholder')) {
     console.warn('⚠️ VITE_SUPABASE_URL 格式可能不正确:', SUPABASE_URL);
   }
   if (!isValidKey(SUPABASE_PUBLISHABLE_KEY)) {
     console.warn('⚠️ VITE_SUPABASE_PUBLISHABLE_KEY 格式可能不正确。应该是以 "eyJ" 开头的 JWT token 或 "sb_publishable_" 开头的 key');
   }
+} else {
+  console.error('❌ Supabase 环境变量缺失:', {
+    hasUrl: !!SUPABASE_URL,
+    hasKey: !!SUPABASE_PUBLISHABLE_KEY,
+    url: SUPABASE_URL || '未设置',
+    keyPrefix: SUPABASE_PUBLISHABLE_KEY ? SUPABASE_PUBLISHABLE_KEY.substring(0, 20) + '...' : '未设置'
+  });
 }
 
 // 导出配置检查函数

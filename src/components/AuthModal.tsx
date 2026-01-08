@@ -122,8 +122,32 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
     } catch (err: any) {
       console.error("Auth error:", err);
       const errorMsg = err?.message || "未知错误";
+      
+      // 添加调试信息
+      console.log('🔍 注册/登录失败，调试信息:');
+      console.log('  - 错误信息:', errorMsg);
+      console.log('  - 环境变量 URL:', import.meta.env.VITE_SUPABASE_URL ? '已设置' : '未设置');
+      console.log('  - 环境变量 Key:', import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ? '已设置 (' + import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY.substring(0, 30) + '...)' : '未设置');
+      
       if (errorMsg.includes("fetch") || errorMsg.includes("network") || errorMsg.includes("Failed to fetch")) {
-        toast.error("无法连接到 Supabase，请检查环境变量配置", { duration: 6000 });
+        toast.error("无法连接到 Supabase，请检查环境变量配置。打开控制台查看详细信息。", { duration: 8000 });
+      } else if (errorMsg.toLowerCase().includes("invalid") && errorMsg.toLowerCase().includes("api")) {
+        // API key 错误 - 显示详细指导
+        const hasUrl = !!import.meta.env.VITE_SUPABASE_URL;
+        const hasKey = !!import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        const keyPreview = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY 
+          ? `${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY.substring(0, 30)}...` 
+          : "未设置";
+        
+        toast.error(
+          `API Key 错误！\n\n` +
+          `请在浏览器控制台（F12）查看详细配置信息。\n\n` +
+          `如果环境变量已配置，请：\n` +
+          `1. 确认已重新部署\n` +
+          `2. 清除浏览器缓存\n` +
+          `3. 刷新页面后重试`,
+          { duration: 10000 }
+        );
       } else {
         toast.error(errorMsg, { duration: 6000 });
       }
