@@ -48,32 +48,46 @@ const StudioPage = () => {
   // Load creation data
   useEffect(() => {
     const loadData = async () => {
-      if (authLoading) return;
-      
-      if (id === 'new') {
-        // Load from sessionStorage for new/temp creations
-        const pendingData = sessionStorage.getItem('pending_creation');
-        if (pendingData) {
-          try {
-            const parsed = JSON.parse(pendingData);
-            setCode(parsed.code || '');
-            setPrompt(parsed.prompt || '');
-            setTitle(parsed.title || 'Untitled Creation');
-            lastSavedCodeRef.current = parsed.code || '';
-          } catch (e) {
-            console.error('Failed to parse pending creation:', e);
-          }
-        }
-        setIsNewCreation(true);
-        setLoading(false);
+      // 如果认证还在加载，等待完成（最多等待 3 秒）
+      if (authLoading) {
+        // 设置超时，避免无限等待
+        const timeoutId = setTimeout(() => {
+          console.warn('Auth loading timeout, proceeding anyway');
+          setLoading(false);
+        }, 3000);
         
-        // If user is logged in, auto-save as draft
-        if (user && pendingData) {
-          await saveAsDraft();
-        }
-      } else if (id) {
-        // Load from database
-        try {
+        // 如果 authLoading 变为 false，清除超时并继续
+        return () => clearTimeout(timeoutId);
+      }
+      
+      // 认证加载完成，开始加载数据
+      try {
+        if (id === 'new') {
+          // Load from sessionStorage for new/temp creations
+          const pendingData = sessionStorage.getItem('pending_creation');
+          if (pendingData) {
+            try {
+              const parsed = JSON.parse(pendingData);
+              setCode(parsed.code || '');
+              setPrompt(parsed.prompt || '');
+              setTitle(parsed.title || 'Untitled Creation');
+              lastSavedCodeRef.current = parsed.code || '';
+            } catch (e) {
+              console.error('Failed to parse pending creation:', e);
+            }
+          }
+          setIsNewCreation(true);
+          setLoading(false);
+          
+          // If user is logged in, auto-save as draft (don't wait for it to block rendering)
+          if (user && pendingData) {
+            saveAsDraft().catch(error => {
+              ErrorHandler.logError(error, 'StudioPage.autoSaveDraft');
+              // Don't show error toast for auto-save failures
+            });
+          }
+        } else if (id) {
+          // Load from database
           const data = await creationService.getCreationById(id);
           
           if (!data) {
@@ -82,43 +96,53 @@ const StudioPage = () => {
               description: 'Failed to load creation',
               variant: 'destructive',
             });
+            setLoading(false);
             navigate('/');
             return;
           }
           
           // Check ownership for editing
           if (data.user_id !== user?.id) {
-            // Can only view if public
+            // Can only view if public, otherwise redirect to public view
             if (!data.is_public) {
               toast({
                 title: 'Access Denied',
                 description: 'You do not have permission to view this creation',
                 variant: 'destructive',
               });
+              setLoading(false);
               navigate('/');
               return;
             }
-          // Redirect to play-only view
-          navigate(`/creation/${id}`);
-          return;
-        }
-        
+            // If public and not owner, redirect to play-only view
+            setLoading(false);
+            navigate(`/creation/${id}`);
+            return;
+          }
+          
+          // User owns this creation, load for editing
           setCreation(data as Creation);
           setCode(data.html_code);
           setTitle(data.title);
           setPrompt(data.prompt);
           setIsPublic(data.is_public || false);
           lastSavedCodeRef.current = data.html_code;
+          setIsNewCreation(false);
           setLoading(false);
-        } catch (error) {
-          ErrorHandler.logError(error, 'StudioPage.loadData');
-          toast({
-            title: 'Error',
-            description: ErrorHandler.getUserMessage(error),
-            variant: 'destructive',
-          });
-          navigate('/');
+        } else {
+          // No id, treat as new
+          setIsNewCreation(true);
+          setLoading(false);
         }
+      } catch (error) {
+        ErrorHandler.logError(error, 'StudioPage.loadData');
+        toast({
+          title: 'Error',
+          description: ErrorHandler.getUserMessage(error),
+          variant: 'destructive',
+        });
+        setLoading(false);
+        // Don't navigate on error, let user see the error message
       }
     };
     
