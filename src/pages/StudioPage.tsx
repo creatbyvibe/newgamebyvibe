@@ -56,8 +56,10 @@ const StudioPage = () => {
           setLoading(false);
         }, 3000);
         
-        // 如果 authLoading 变为 false，清除超时并继续
-        return () => clearTimeout(timeoutId);
+        // 返回清理函数，当 authLoading 变为 false 时会重新触发 useEffect
+        return () => {
+          clearTimeout(timeoutId);
+        };
       }
       
       // 认证加载完成，开始加载数据
