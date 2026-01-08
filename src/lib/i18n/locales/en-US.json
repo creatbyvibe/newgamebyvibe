@@ -108,7 +108,12 @@
     "conceptualizing": "Conceptualizing fusion solution...",
     "generatingCode": "Generating game code...",
     "optimizing": "Optimizing game experience...",
-    "almostDone": "Almost done..."
+    "almostDone": "Almost done...",
+    "fusionSymbol": " × ",
+    "equalsQuestion": "= ???",
+    "fusionPrompt": "Create a unique fusion game that combines: {{games}}. The game should creatively merge the core mechanics of each game into something new and interesting. Make sure the game is fully playable with clear instructions shown on screen. Use a fun, colorful visual style.",
+    "fusionLabel": "Fusion:",
+    "minGamesHint": "Select at least 2 games to start fusion"
   },
   "aiCreator": {
     "understanding": "Understanding your creativity...",

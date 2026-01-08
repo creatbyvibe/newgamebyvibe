@@ -132,11 +132,8 @@ const GameLab = () => {
       // #endregion
 
       const gameNames = selectedGames.map(g => g.name).join(" + ");
-      const prompt = `Create a unique fusion game that combines: ${selectedGames.map(g => `${g.name} (${g.description})`).join(" and ")}.
-      
-The game should creatively merge the core mechanics of each game into something new and interesting.
-Make sure the game is fully playable with clear instructions shown on screen.
-Use a fun, colorful visual style.`;
+      const gamesDescription = selectedGames.map(g => `${g.name} (${g.description})`).join(", ");
+      const prompt = t('gameLab.fusionPrompt', { games: gamesDescription });
 
       // First, get the AI to generate scores and concept
       // 使用 gameLabService 融合游戏概念
@@ -314,7 +311,7 @@ Use a fun, colorful visual style.`;
     if (!generatedGame?.code) return;
 
     const title = generatedGame.name;
-    const prompt = `Fusion: ${selectedGames.map(g => g.name).join(" + ")}`;
+    const prompt = `${t('gameLab.fusionLabel')} ${selectedGames.map(g => g.name).join(" + ")}`;
 
     if (user) {
       try {
@@ -486,7 +483,7 @@ Use a fun, colorful visual style.`;
             </Button>
             {selectedGames.length < 2 && (
               <p className="text-sm text-muted-foreground mt-2">
-                至少选择 2 个游戏才能开始融合
+                {t('gameLab.minGamesHint')}
               </p>
             )}
           </div>
@@ -517,7 +514,7 @@ Use a fun, colorful visual style.`;
                     {loadingSteps[loadingStep]?.text || t('gameLab.generating')}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {selectedGames.map(g => g.name).join(" × ")} = ???
+                    {selectedGames.map(g => g.name).join(t('gameLab.fusionSymbol'))} {t('gameLab.equalsQuestion')}
                   </p>
                 </div>
 
