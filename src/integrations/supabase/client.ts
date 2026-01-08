@@ -76,3 +76,11 @@ export const isSupabaseConfigured = () => {
            !SUPABASE_URL.includes('placeholder') && 
            !SUPABASE_PUBLISHABLE_KEY.includes('placeholder'));
 };
+
+// 导出配置获取函数，确保所有地方使用同一个配置源
+export const getSupabaseConfig = () => {
+  return {
+    url: SUPABASE_URL,
+    key: SUPABASE_PUBLISHABLE_KEY,
+  };
+};

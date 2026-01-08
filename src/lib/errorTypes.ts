@@ -7,6 +7,10 @@ export enum ErrorCode {
   NETWORK_ERROR = 'NETWORK_ERROR',
   TIMEOUT_ERROR = 'TIMEOUT_ERROR',
   
+  // 请求错误
+  BAD_REQUEST = 'BAD_REQUEST',
+  RATE_LIMIT = 'RATE_LIMIT',
+  
   // 认证错误
   UNAUTHORIZED = 'UNAUTHORIZED',
   FORBIDDEN = 'FORBIDDEN',
@@ -61,6 +65,8 @@ export function getUserFriendlyMessage(error: AppError | Error | unknown): strin
     const messageMap: Record<ErrorCode, string> = {
       [ErrorCode.NETWORK_ERROR]: '网络连接失败，请检查您的网络设置',
       [ErrorCode.TIMEOUT_ERROR]: '请求超时，请稍后重试',
+      [ErrorCode.BAD_REQUEST]: '请求参数错误，请检查后重试',
+      [ErrorCode.RATE_LIMIT]: '请求过于频繁，请稍后再试',
       [ErrorCode.UNAUTHORIZED]: '您尚未登录，请先登录',
       [ErrorCode.FORBIDDEN]: '您没有权限执行此操作',
       [ErrorCode.TOKEN_EXPIRED]: '登录已过期，请重新登录',

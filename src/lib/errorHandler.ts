@@ -17,16 +17,38 @@ export class ErrorHandler {
     if (error && typeof error === 'object' && 'message' in error) {
       const supabaseError = error as { message: string; code?: string; status?: number };
       
-      // 映射 Supabase 错误代码
+      // 映射 Supabase 错误代码和 HTTP 状态码
       const codeMap: Record<string, ErrorCode> = {
         'PGRST116': ErrorCode.NOT_FOUND,
         '23505': ErrorCode.DUPLICATE_ERROR,
         '23503': ErrorCode.VALIDATION_ERROR,
         '42501': ErrorCode.FORBIDDEN,
         'PGRST301': ErrorCode.UNAUTHORIZED,
+        'PGRST302': ErrorCode.FORBIDDEN, // RLS 策略阻止
       };
 
-      const code = codeMap[supabaseError.code || ''] || ErrorCode.UNKNOWN_ERROR;
+      // 如果存在 HTTP 状态码，优先使用状态码映射
+      let code = ErrorCode.UNKNOWN_ERROR;
+      if (supabaseError.status) {
+        const statusCodeMap: Record<number, ErrorCode> = {
+          400: ErrorCode.BAD_REQUEST,
+          401: ErrorCode.UNAUTHORIZED,
+          403: ErrorCode.FORBIDDEN,
+          404: ErrorCode.NOT_FOUND,
+          409: ErrorCode.DUPLICATE_ERROR,
+          422: ErrorCode.VALIDATION_ERROR,
+          429: ErrorCode.RATE_LIMIT,
+          500: ErrorCode.SERVER_ERROR,
+          502: ErrorCode.SERVICE_UNAVAILABLE,
+          503: ErrorCode.SERVICE_UNAVAILABLE,
+        };
+        code = statusCodeMap[supabaseError.status] || code;
+      }
+      
+      // 如果没有状态码映射，使用错误代码映射
+      if (code === ErrorCode.UNKNOWN_ERROR && supabaseError.code) {
+        code = codeMap[supabaseError.code] || ErrorCode.UNKNOWN_ERROR;
+      }
       
       return createAppError(
         code,

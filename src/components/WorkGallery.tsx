@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Play, Heart, User, TrendingUp } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { creationService } from "@/services/creationService";
 import { userService } from "@/services/userService";
 import { ErrorHandler } from "@/lib/errorHandler";
+import { ErrorCode } from "@/lib/errorTypes";
 
 interface Creation {
   id: string;
@@ -40,34 +41,55 @@ const WorkGallery = ({ showPublicOnly = true }: WorkGalleryProps) => {
   const [loading, setLoading] = useState(true);
   const [userLikes, setUserLikes] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    fetchWorks();
-    if (user) {
-      fetchUserLikes();
-    }
-  }, [user, showPublicOnly]);
-
-  const fetchWorks = async () => {
+  // 使用 useCallback 包装 fetchWorks，避免依赖问题
+  const fetchWorks = useCallback(async () => {
     try {
+      setLoading(true);
       const data = await creationService.getPublicCreations(6);
       setWorks(data as Creation[]);
     } catch (error) {
       ErrorHandler.logError(error, 'WorkGallery.fetchWorks');
-      toast.error(ErrorHandler.getUserMessage(error));
+      const errorMessage = ErrorHandler.getUserMessage(error);
+      
+      // 对 401 错误提供更友好的提示
+      const appError = ErrorHandler.handle(error);
+      if (appError.code === ErrorCode.UNAUTHORIZED || appError.statusCode === 401) {
+        toast.error('无法加载作品：请检查网络连接或刷新页面', { duration: 5000 });
+      } else {
+        toast.error(errorMessage);
+      }
+      
+      // 如果出错，保持空数组（显示占位符）
+      setWorks([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [showPublicOnly]); // 只依赖 showPublicOnly
 
-  const fetchUserLikes = async () => {
+  // 使用 useCallback 包装 fetchUserLikes
+  const fetchUserLikes = useCallback(async () => {
     if (!user) return;
     try {
       const likes = await userService.getUserLikes(user.id);
       setUserLikes(new Set(likes));
     } catch (error) {
       ErrorHandler.logError(error, 'WorkGallery.fetchUserLikes');
+      // 点赞状态获取失败不影响主功能，静默失败
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    fetchWorks();
+  }, [fetchWorks]);
+
+  useEffect(() => {
+    if (user) {
+      fetchUserLikes();
+    } else {
+      // 用户登出时清空点赞状态
+      setUserLikes(new Set());
+    }
+  }, [user, fetchUserLikes]);
 
   const handleLike = async (e: React.MouseEvent, creationId: string) => {
     e.stopPropagation();

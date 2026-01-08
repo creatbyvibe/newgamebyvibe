@@ -40,16 +40,24 @@ export const creationService = {
 
   /**
    * 获取公开的创作列表
+   * 允许匿名用户访问，使用 RLS 策略保护
    */
   async getPublicCreations(limit = 6): Promise<Creation[]> {
-    return apiClient.query(() =>
-      supabase
-        .from('creations')
-        .select('*')
-        .eq('is_public', true)
-        .order('likes', { ascending: false })
-        .limit(limit)
-    );
+    try {
+      return await apiClient.query(() =>
+        supabase
+          .from('creations')
+          .select('*')
+          .eq('is_public', true)
+          .order('likes', { ascending: false })
+          .limit(limit)
+      );
+    } catch (error) {
+      // 401/403 错误可能表示 RLS 策略问题或认证问题
+      // 记录错误并重新抛出，让调用者处理
+      console.error('[creationService.getPublicCreations] Error:', error);
+      throw error;
+    }
   },
 
   /**
@@ -66,19 +74,38 @@ export const creationService = {
 
   /**
    * 根据 ID 获取创作
+   * 添加输入验证和类型守卫
    */
   async getCreationById(id: string): Promise<Creation | null> {
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      throw new Error('Invalid creation ID');
+    }
+    
     return apiClient.queryNullable(() =>
-      supabase.from('creations').select('*').eq('id', id).single()
+      supabase.from('creations').select('*').eq('id', id.trim()).maybeSingle()
     );
   },
 
   /**
    * 创建新创作
+   * 添加输入验证和类型守卫
    */
   async createCreation(input: CreateCreationInput): Promise<Creation> {
+    // 输入验证
+    if (!input || typeof input !== 'object') {
+      throw new Error('Invalid input: input must be an object');
+    }
+    
+    if (!input.title || typeof input.title !== 'string' || input.title.trim() === '') {
+      throw new Error('Invalid input: title is required');
+    }
+    
+    if (!input.html_code || typeof input.html_code !== 'string') {
+      throw new Error('Invalid input: html_code is required');
+    }
+    
     const { data: session } = await supabase.auth.getSession();
-    if (!session?.session?.user) {
+    if (!session?.session?.user?.id) {
       throw new Error('用户未登录');
     }
 
@@ -86,9 +113,11 @@ export const creationService = {
       supabase
         .from('creations')
         .insert({
-          ...input,
-          user_id: session.session.user.id,
+          title: input.title.trim(),
+          prompt: input.prompt || '',
+          html_code: input.html_code,
           is_public: input.is_public ?? false,
+          user_id: session.session.user.id,
         })
         .select()
         .single()

@@ -45,6 +45,42 @@ const StudioPage = () => {
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedCodeRef = useRef<string>('');
 
+  // Save as draft for new creations - 使用 useCallback 包装避免依赖问题
+  const saveAsDraft = useCallback(async () => {
+    if (!user) return;
+    
+    const pendingData = sessionStorage.getItem('pending_creation');
+    if (!pendingData) return;
+    
+    try {
+      const parsed = JSON.parse(pendingData);
+      const creation = await creationService.createCreation({
+        title: parsed.title || 'Untitled Creation',
+        prompt: parsed.prompt || '',
+        html_code: parsed.code || '',
+        is_public: false,
+      });
+      
+      // Clear session storage and redirect to the new creation
+      sessionStorage.removeItem('pending_creation');
+      setIsNewCreation(false);
+      setCreation(creation as Creation);
+      navigate(`/studio/${creation.id}`, { replace: true });
+      
+      toast({
+        title: 'Draft Saved',
+        description: 'Your creation has been saved as a draft',
+      });
+    } catch (error) {
+      ErrorHandler.logError(error, 'StudioPage.saveAsDraft');
+      toast({
+        title: 'Error',
+        description: ErrorHandler.getUserMessage(error),
+        variant: 'destructive',
+      });
+    }
+  }, [user, navigate, toast]);
+
   // Load creation data
   useEffect(() => {
     // 如果认证还在加载，等待完成（最多等待 5 秒后强制继续）
@@ -153,43 +189,7 @@ const StudioPage = () => {
     return () => {
       // 如果组件卸载，可以在这里清理资源
     };
-  }, [id, user, authLoading, navigate, toast]);
-
-  // Save as draft for new creations
-  const saveAsDraft = async () => {
-    if (!user) return;
-    
-    const pendingData = sessionStorage.getItem('pending_creation');
-    if (!pendingData) return;
-    
-    try {
-      const parsed = JSON.parse(pendingData);
-      const creation = await creationService.createCreation({
-        title: parsed.title || 'Untitled Creation',
-        prompt: parsed.prompt || '',
-        html_code: parsed.code || '',
-        is_public: false,
-      });
-      
-      // Clear session storage and redirect to the new creation
-      sessionStorage.removeItem('pending_creation');
-      setIsNewCreation(false);
-      setCreation(creation as Creation);
-      navigate(`/studio/${creation.id}`, { replace: true });
-      
-      toast({
-        title: 'Draft Saved',
-        description: 'Your creation has been saved as a draft',
-      });
-    } catch (error) {
-      ErrorHandler.logError(error, 'StudioPage.saveAsDraft');
-      toast({
-        title: 'Error',
-        description: ErrorHandler.getUserMessage(error),
-        variant: 'destructive',
-      });
-    }
-  };
+  }, [id, user, authLoading, navigate, toast, saveAsDraft]);
 
   // Auto-save logic
   const performAutoSave = useCallback(async () => {

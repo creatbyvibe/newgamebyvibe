@@ -20,12 +20,12 @@
 
 #### 变量 1：`VITE_SUPABASE_URL`
 - **Key**: `VITE_SUPABASE_URL`
-- **Value**: `https://oxuzepkyeknogqwktgha.supabase.co`
+- **Value**: `https://zntuprdrkpceklptodkp.supabase.co`
 - **Environment**: 选择 `Production`, `Preview`, 和 `Development`
 
 #### 变量 2：`VITE_SUPABASE_PUBLISHABLE_KEY`
 - **Key**: `VITE_SUPABASE_PUBLISHABLE_KEY`
-- **Value**: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im94dXplcGt5ZWtub2dxd2t0Z2hhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3NTU4NzcsImV4cCI6MjA4MzMzMTg3N30.Oh8lc6pe2XtB_zmSnuQ4-4S-a9iT7e7nfFRcsetztKc`
+- **Value**: 你的 Supabase anon/public key（从 Supabase Dashboard 获取）
 - **Environment**: 选择 `Production`, `Preview`, 和 `Development`
 
 **⚠️ 重要提示**：
@@ -38,7 +38,7 @@
 如果上面的 key 不对，请按以下步骤获取：
 
 1. 访问 Supabase Dashboard: https://supabase.com/dashboard
-2. 选择项目：`oxuzepkyeknogqwktgha`
+2. 选择项目：`zntuprdrkpceklptodkp`
 3. 进入 **Settings** → **API**
 4. 找到 **Project API keys**
 5. 复制 **`anon` `public`** key（不是 `service_role` secret key）

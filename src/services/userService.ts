@@ -67,14 +67,19 @@ export const userService = {
    * 检查用户是否点赞了某个创作
    */
   async hasLiked(userId: string, creationId: string): Promise<boolean> {
-    const { data } = await supabase
-      .from('creation_likes')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('creation_id', creationId)
-      .single();
+    try {
+      const { data } = await supabase
+        .from('creation_likes')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('creation_id', creationId)
+        .maybeSingle(); // 使用 maybeSingle 避免找不到数据时抛出错误
 
-    return !!data;
+      return !!data;
+    } catch (error) {
+      console.error('[userService.hasLiked] Error:', error);
+      return false; // 出错时返回 false，不影响主流程
+    }
   },
 
   /**
@@ -109,14 +114,19 @@ export const userService = {
    * 检查用户是否收藏了某个创作
    */
   async hasBookmarked(userId: string, creationId: string): Promise<boolean> {
-    const { data } = await supabase
-      .from('bookmarks')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('creation_id', creationId)
-      .maybeSingle();
+    try {
+      const { data } = await supabase
+        .from('bookmarks')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('creation_id', creationId)
+        .maybeSingle(); // 使用 maybeSingle 避免找不到数据时抛出错误
 
-    return !!data;
+      return !!data;
+    } catch (error) {
+      console.error('[userService.hasBookmarked] Error:', error);
+      return false; // 出错时返回 false，不影响主流程
+    }
   },
 
   /**

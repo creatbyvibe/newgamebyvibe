@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, getSupabaseConfig } from '@/integrations/supabase/client';
 
 export interface ApiError {
   message: string;
@@ -31,9 +31,25 @@ export class ApiClient {
       return error;
     }
 
-    const message = error?.message || '操作失败，请重试';
-    const code = error?.code || 'UNKNOWN_ERROR';
-    const status = error?.status || 500;
+    let message = error?.message || '操作失败，请重试';
+    let code = error?.code || 'UNKNOWN_ERROR';
+    let status = error?.status || 500;
+
+    // 处理 Supabase HTTP 错误
+    if (error?.status) {
+      status = error.status;
+      code = this.mapHttpStatusToErrorCode(status);
+      message = this.getErrorMessage(status, error.message);
+    }
+
+    // 处理 Supabase PostgREST 错误代码
+    if (error?.code && typeof error.code === 'string') {
+      const pgCode = this.mapSupabaseCodeToErrorCode(error.code);
+      if (pgCode) {
+        code = pgCode;
+        message = this.getSupabaseErrorMessage(error.code, error.message) || message;
+      }
+    }
 
     // 记录错误日志
     console.error('[ApiClient] Error:', { message, code, status, error });
@@ -42,7 +58,78 @@ export class ApiClient {
   }
 
   /**
+   * 将 HTTP 状态码映射到错误代码
+   */
+  private mapHttpStatusToErrorCode(status: number): string {
+    const statusMap: Record<number, string> = {
+      400: 'BAD_REQUEST',
+      401: 'UNAUTHORIZED',
+      403: 'FORBIDDEN',
+      404: 'NOT_FOUND',
+      409: 'DUPLICATE_ERROR',
+      422: 'VALIDATION_ERROR',
+      429: 'RATE_LIMIT',
+      500: 'SERVER_ERROR',
+      502: 'BAD_GATEWAY',
+      503: 'SERVICE_UNAVAILABLE',
+    };
+    return statusMap[status] || 'UNKNOWN_ERROR';
+  }
+
+  /**
+   * 将 Supabase 错误代码映射到错误代码
+   */
+  private mapSupabaseCodeToErrorCode(supabaseCode: string): string | null {
+    const codeMap: Record<string, string> = {
+      'PGRST116': 'NOT_FOUND',      // 未找到
+      '23505': 'DUPLICATE_ERROR',   // 唯一约束违反
+      '23503': 'VALIDATION_ERROR',  // 外键约束违反
+      '42501': 'FORBIDDEN',         // 权限不足
+      'PGRST301': 'UNAUTHORIZED',   // 认证失败
+      'PGRST302': 'FORBIDDEN',      // RLS 策略阻止
+    };
+    return codeMap[supabaseCode] || null;
+  }
+
+  /**
+   * 获取 HTTP 状态码对应的错误消息
+   */
+  private getErrorMessage(status: number, originalMessage?: string): string {
+    const messageMap: Record<number, string> = {
+      400: '请求参数错误',
+      401: '认证失败，请刷新页面后重试',
+      403: '没有权限访问此资源',
+      404: '请求的资源不存在',
+      409: '数据已存在，请勿重复创建',
+      422: '数据验证失败',
+      429: '请求过于频繁，请稍后再试',
+      500: '服务器错误，请稍后重试',
+      502: '服务暂时不可用，请稍后重试',
+      503: '服务暂时不可用，请稍后重试',
+    };
+
+    return messageMap[status] || originalMessage || '操作失败，请重试';
+  }
+
+  /**
+   * 获取 Supabase 错误代码对应的错误消息
+   */
+  private getSupabaseErrorMessage(code: string, originalMessage?: string): string | null {
+    const messageMap: Record<string, string> = {
+      'PGRST116': '未找到请求的数据',
+      '23505': '数据已存在，请勿重复创建',
+      '23503': '关联数据不存在',
+      '42501': '权限不足，无法执行此操作',
+      'PGRST301': '认证失败，请刷新页面后重试',
+      'PGRST302': '没有权限访问此资源，可能是 RLS 策略限制',
+    };
+
+    return messageMap[code] || originalMessage || null;
+  }
+
+  /**
    * 执行 Supabase 查询
+   * 添加类型守卫确保数据不为 null
    */
   async query<T>(
     queryFn: () => Promise<{ data: T | null; error: any }>
@@ -54,11 +141,12 @@ export class ApiClient {
         throw this.handleError(error);
       }
 
-      if (data === null) {
+      // 类型守卫：确保数据不为 null
+      if (data === null || data === undefined) {
         throw new ApiClientError('未找到数据', 'NOT_FOUND', 404);
       }
 
-      return data;
+      return data as T;
     } catch (error) {
       if (error instanceof ApiClientError) {
         throw error;
@@ -69,6 +157,7 @@ export class ApiClient {
 
   /**
    * 执行 Supabase 查询（允许 null）
+   * 添加类型守卫确保正确的返回类型
    */
   async queryNullable<T>(
     queryFn: () => Promise<{ data: T | null; error: any }>
@@ -80,7 +169,8 @@ export class ApiClient {
         throw this.handleError(error);
       }
 
-      return data;
+      // 明确返回类型，包括 null 和 undefined 的情况
+      return data ?? null;
     } catch (error) {
       if (error instanceof ApiClientError) {
         throw error;
@@ -150,11 +240,36 @@ export class ApiClient {
   ): Promise<string> {
     try {
       const session = await supabase.auth.getSession();
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      
+      // 从统一的配置源获取 URL 和 Key，确保与客户端实例一致
+      const config = getSupabaseConfig();
+      const supabaseUrl = config.url;
+      const supabaseKey = config.key;
       
       if (!supabaseUrl || !supabaseKey) {
-        throw new ApiClientError('Supabase 配置错误', 'CONFIG_ERROR', 500);
+        throw new ApiClientError(
+          'Supabase 配置错误：环境变量未配置',
+          'CONFIG_ERROR',
+          500
+        );
+      }
+      
+      // 验证 URL 格式
+      if (!supabaseUrl.startsWith('https://') || supabaseUrl.includes('placeholder')) {
+        throw new ApiClientError(
+          `Supabase URL 配置错误: ${supabaseUrl}. 请在 Vercel Dashboard 配置正确的 VITE_SUPABASE_URL`,
+          'CONFIG_ERROR',
+          500
+        );
+      }
+      
+      // 验证 Key 格式
+      if (!supabaseKey || supabaseKey.includes('placeholder')) {
+        throw new ApiClientError(
+          'Supabase Key 配置错误：请在 Vercel Dashboard 配置正确的 VITE_SUPABASE_PUBLISHABLE_KEY',
+          'CONFIG_ERROR',
+          500
+        );
       }
       
       const response = await fetch(
@@ -171,11 +286,25 @@ export class ApiClient {
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unknown error');
-        throw new ApiClientError(
-          `请求失败: ${response.statusText || errorText}`,
-          'FUNCTION_ERROR',
-          response.status
-        );
+        let errorMessage = `请求失败: ${response.statusText || errorText}`;
+        let errorCode = 'FUNCTION_ERROR';
+        
+        // 根据 HTTP 状态码提供更友好的错误信息
+        if (response.status === 401) {
+          errorMessage = '认证失败，请刷新页面后重试';
+          errorCode = 'UNAUTHORIZED';
+        } else if (response.status === 403) {
+          errorMessage = '没有权限访问此资源';
+          errorCode = 'FORBIDDEN';
+        } else if (response.status === 404) {
+          errorMessage = '请求的资源不存在';
+          errorCode = 'NOT_FOUND';
+        } else if (response.status >= 500) {
+          errorMessage = '服务器错误，请稍后重试';
+          errorCode = 'SERVER_ERROR';
+        }
+        
+        throw new ApiClientError(errorMessage, errorCode, response.status);
       }
 
       const reader = response.body?.getReader();
