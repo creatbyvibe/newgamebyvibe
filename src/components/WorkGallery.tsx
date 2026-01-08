@@ -54,7 +54,7 @@ const WorkGallery = ({ showPublicOnly = true }: WorkGalleryProps) => {
       // 对 401 错误提供更友好的提示
       const appError = ErrorHandler.handle(error);
       if (appError.code === ErrorCode.UNAUTHORIZED || appError.statusCode === 401) {
-        toast.error('无法加载作品：请检查网络连接或刷新页面', { duration: 5000 });
+        toast.error(t('community.failedToLoad'), { duration: 5000 });
       } else {
         toast.error(errorMessage);
       }
@@ -94,7 +94,7 @@ const WorkGallery = ({ showPublicOnly = true }: WorkGalleryProps) => {
   const handleLike = async (e: React.MouseEvent, creationId: string) => {
     e.stopPropagation();
     if (!user) {
-      toast.error("请先登录");
+      toast.error(t('auth.unauthorized'));
       return;
     }
 
@@ -147,15 +147,15 @@ const WorkGallery = ({ showPublicOnly = true }: WorkGalleryProps) => {
         <div>
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp className="w-5 h-5 text-primary" />
-            <span className="text-sm font-medium text-primary">热门</span>
+            <span className="text-sm font-medium text-primary">{t('home.trending')}</span>
           </div>
-          <h2 className="font-display text-foreground">社区作品</h2>
+          <h2 className="font-display text-foreground">{t('home.communityWorks')}</h2>
           <p className="text-muted-foreground mt-2">
-            发现并体验社区创作者的游戏
+            {t('home.communityWorksDescription')}
           </p>
         </div>
         <a href="/community" className="text-sm text-primary hover:underline font-medium">
-          查看全部 →
+          {t('home.viewMore')}
         </a>
       </div>
 
@@ -219,7 +219,7 @@ const WorkGallery = ({ showPublicOnly = true }: WorkGalleryProps) => {
                     </h4>
                     <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                       <User className="w-3 h-3" />
-                      Creator
+                      {t('home.creator')}
                     </p>
                   </div>
                 </div>
@@ -237,7 +237,7 @@ const WorkGallery = ({ showPublicOnly = true }: WorkGalleryProps) => {
                   />
                   <div className="absolute inset-0 flex items-center justify-center">
                     <span className="text-xs text-muted-foreground bg-background/80 px-3 py-1 rounded-full">
-                      Coming soon
+                      {t('home.comingSoon')}
                     </span>
                   </div>
                   <div className="absolute bottom-2 left-2 right-2 flex items-center gap-2 text-xs">
@@ -255,7 +255,7 @@ const WorkGallery = ({ showPublicOnly = true }: WorkGalleryProps) => {
                   <h4 className="font-display text-sm font-semibold text-foreground line-clamp-1">
                     {work.title}
                   </h4>
-                  <p className="text-xs text-muted-foreground mt-1">by {work.author}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t('home.byAuthor', { author: work.author })}</p>
                 </div>
               </div>
             ))}

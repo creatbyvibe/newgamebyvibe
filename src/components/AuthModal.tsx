@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Loader2, Sparkles } from "lucide-react";
+import { getRandomMessage } from "@/lib/utils/messageUtils";
 
 interface AuthModalProps {
   open: boolean;
@@ -77,43 +78,43 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
         const errorLower = error.message.toLowerCase();
         
         if (errorLower.includes("invalid login credentials") || errorLower.includes("invalid credentials")) {
-          errorMessage = "邮箱或密码错误";
+          errorMessage = getRandomMessage(t('auth.invalidCredentials'));
         } else if (errorLower.includes("user already registered") || errorLower.includes("already registered")) {
-          errorMessage = "该邮箱已被注册";
+          errorMessage = getRandomMessage(t('auth.emailExists'));
         } else if (errorLower.includes("email not confirmed") || errorLower.includes("email_not_confirmed")) {
-          errorMessage = "请先验证您的邮箱";
+          errorMessage = getRandomMessage(t('auth.emailNotConfirmed'));
         } else if (errorLower.includes("password")) {
-          errorMessage = "密码格式不正确";
+          errorMessage = getRandomMessage(t('auth.passwordInvalid'));
         } else if (errorLower.includes("fetch") || errorLower.includes("network") || errorLower.includes("failed to fetch")) {
-          errorMessage = "网络连接失败，请检查网络后重试";
+          errorMessage = getRandomMessage(t('auth.networkError'));
         } else if (errorLower.includes("invalid") && (errorLower.includes("api") || errorLower.includes("key"))) {
           // API key 错误 - 提供详细的配置指导
           const hasUrl = !!import.meta.env.VITE_SUPABASE_URL;
           const hasKey = !!import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-          const url = import.meta.env.VITE_SUPABASE_URL || "未配置";
+          const url = import.meta.env.VITE_SUPABASE_URL || t('common.notSet');
           const keyPreview = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY 
             ? `${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY.substring(0, 20)}...` 
-            : "未配置";
+            : t('common.notSet');
           
-          errorMessage = `API Key 配置错误！\n\n` +
-            `请在 Vercel Dashboard → Settings → Environment Variables 配置：\n\n` +
+          errorMessage = getRandomMessage(t('auth.apiKeyError')) + `\n\n` +
+            `${t('auth.configureInVercel')}:\n\n` +
             `1. VITE_SUPABASE_URL\n` +
-            `   当前: ${hasUrl ? '✅ 已配置' : '❌ 未配置'} (${url})\n\n` +
-            `2. VITE_SUPABASE_PUBLISHABLE_KEY (必须是 anon/public key)\n` +
-            `   当前: ${hasKey ? '✅ 已配置' : '❌ 未配置'} (${keyPreview})\n\n` +
-            `配置后需要重新部署才能生效！`;
+            `   ${t('common.current')}: ${hasUrl ? '✅ ' + t('common.configured') : '❌ ' + t('common.notConfigured')} (${url})\n\n` +
+            `2. VITE_SUPABASE_PUBLISHABLE_KEY (${t('auth.mustBeAnonKey')})\n` +
+            `   ${t('common.current')}: ${hasKey ? '✅ ' + t('common.configured') : '❌ ' + t('common.notConfigured')} (${keyPreview})\n\n` +
+            `${t('auth.redeployAfterConfig')}`;
         } else if (errorLower.includes("jwt") || errorLower.includes("token")) {
-          errorMessage = "认证令牌错误，请刷新页面后重试";
+          errorMessage = getRandomMessage(t('auth.tokenError'));
         } else if (errorLower.includes("rate limit") || errorLower.includes("429")) {
-          errorMessage = "请求过于频繁，请稍后再试";
+          errorMessage = getRandomMessage(t('auth.rateLimitError'));
         }
         
         toast.error(errorMessage, { duration: 10000 });
       } else {
         if (isLogin) {
-          toast.success("欢迎回来！");
+          toast.success(getRandomMessage(t('auth.loginSuccess')));
         } else {
-          toast.success("账户创建成功！请检查邮箱验证链接");
+          toast.success(getRandomMessage(t('auth.signupSuccess')));
         }
         onOpenChange(false);
         setEmail("");
@@ -130,22 +131,22 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
       console.log('  - 环境变量 Key:', import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ? '已设置 (' + import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY.substring(0, 30) + '...)' : '未设置');
       
       if (errorMsg.includes("fetch") || errorMsg.includes("network") || errorMsg.includes("Failed to fetch")) {
-        toast.error("无法连接到 Supabase，请检查环境变量配置。打开控制台查看详细信息。", { duration: 8000 });
+        toast.error(getRandomMessage(t('auth.cannotConnectSupabase')), { duration: 8000 });
       } else if (errorMsg.toLowerCase().includes("invalid") && errorMsg.toLowerCase().includes("api")) {
         // API key 错误 - 显示详细指导
         const hasUrl = !!import.meta.env.VITE_SUPABASE_URL;
         const hasKey = !!import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
         const keyPreview = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY 
           ? `${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY.substring(0, 30)}...` 
-          : "未设置";
+          : t('common.notSet');
         
         toast.error(
-          `API Key 错误！\n\n` +
-          `请在浏览器控制台（F12）查看详细配置信息。\n\n` +
-          `如果环境变量已配置，请：\n` +
-          `1. 确认已重新部署\n` +
-          `2. 清除浏览器缓存\n` +
-          `3. 刷新页面后重试`,
+          `${getRandomMessage(t('auth.apiKeyError'))}\n\n` +
+          `${t('auth.checkConsoleForDetails')}\n\n` +
+          `${t('auth.ifEnvConfigured')}\n` +
+          `${t('auth.confirmRedeploy')}\n` +
+          `${t('auth.clearCache')}\n` +
+          `${t('auth.refreshRetry')}`,
           { duration: 10000 }
         );
       } else {

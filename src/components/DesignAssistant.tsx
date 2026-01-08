@@ -4,6 +4,8 @@ import { Loader2, Wand2, Lightbulb, ChevronDown, ChevronUp, Sparkles } from "luc
 import { toast } from "sonner";
 import { apiClient } from "@/lib/apiClient";
 import { ErrorHandler } from "@/lib/errorHandler";
+import { useTranslation } from "react-i18next";
+import { getRandomMessage } from "@/lib/utils/messageUtils";
 
 interface DesignAssistantProps {
   prompt: string;
@@ -21,13 +23,14 @@ interface AnalysisResult {
 }
 
 const DesignAssistant = ({ prompt, onUseOptimized }: DesignAssistantProps) => {
+  const { t } = useTranslation();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [isExpanded, setIsExpanded] = useState(true);
 
   const handleAnalyze = async () => {
     if (!prompt.trim()) {
-      toast.error("请先输入游戏描述");
+      toast.error(getRandomMessage(t('designAssistant.promptRequired')));
       return;
     }
 
@@ -45,7 +48,7 @@ const DesignAssistant = ({ prompt, onUseOptimized }: DesignAssistantProps) => {
       }
     } catch (error) {
       ErrorHandler.logError(error, 'DesignAssistant.handleAnalyze');
-      toast.error(ErrorHandler.getUserMessage(error) || "分析失败，请重试");
+      toast.error(ErrorHandler.getUserMessage(error) || getRandomMessage(t('designAssistant.analysisFailed')));
     } finally {
       setIsAnalyzing(false);
     }
@@ -54,7 +57,7 @@ const DesignAssistant = ({ prompt, onUseOptimized }: DesignAssistantProps) => {
   const handleUseOptimized = () => {
     if (analysis?.optimizedPrompt) {
       onUseOptimized(analysis.optimizedPrompt);
-      toast.success("已应用优化后的提示词");
+      toast.success(getRandomMessage(t('designAssistant.optimizedApplied')));
     }
   };
 
@@ -72,12 +75,12 @@ const DesignAssistant = ({ prompt, onUseOptimized }: DesignAssistantProps) => {
           {isAnalyzing ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              AI正在分析你的想法...
+              {t('designAssistant.analyzing')}
             </>
           ) : (
             <>
               <Lightbulb className="w-4 h-4" />
-              让AI帮你优化游戏设计
+              {t('designAssistant.helpOptimize')}
             </>
           )}
         </Button>
@@ -93,7 +96,7 @@ const DesignAssistant = ({ prompt, onUseOptimized }: DesignAssistantProps) => {
           >
             <div className="flex items-center gap-2">
               <Wand2 className="w-4 h-4 text-primary" />
-              <span className="font-medium text-sm">AI设计建议</span>
+              <span className="font-medium text-sm">{t('designAssistant.aiSuggestions')}</span>
             </div>
             {isExpanded ? (
               <ChevronUp className="w-4 h-4 text-muted-foreground" />
@@ -107,7 +110,7 @@ const DesignAssistant = ({ prompt, onUseOptimized }: DesignAssistantProps) => {
               {/* Enhanced Description */}
               {analysis.enhancedDescription && (
                 <div>
-                  <h4 className="text-xs font-medium text-muted-foreground mb-1">✨ 优化后的描述</h4>
+                  <h4 className="text-xs font-medium text-muted-foreground mb-1">{t('designAssistant.optimizedDescription')}</h4>
                   <p className="text-sm text-foreground">{analysis.enhancedDescription}</p>
                 </div>
               )}
@@ -115,7 +118,7 @@ const DesignAssistant = ({ prompt, onUseOptimized }: DesignAssistantProps) => {
               {/* Core Mechanics */}
               {analysis.coreMechanics && analysis.coreMechanics.length > 0 && (
                 <div>
-                  <h4 className="text-xs font-medium text-muted-foreground mb-1">🎮 核心机制</h4>
+                  <h4 className="text-xs font-medium text-muted-foreground mb-1">{t('designAssistant.coreMechanic')}</h4>
                   <ul className="text-sm text-foreground space-y-1">
                     {analysis.coreMechanics.map((item, i) => (
                       <li key={i} className="flex items-start gap-2">
@@ -130,7 +133,7 @@ const DesignAssistant = ({ prompt, onUseOptimized }: DesignAssistantProps) => {
               {/* Player Goals */}
               {analysis.playerGoals && analysis.playerGoals.length > 0 && (
                 <div>
-                  <h4 className="text-xs font-medium text-muted-foreground mb-1">🎯 玩家目标</h4>
+                  <h4 className="text-xs font-medium text-muted-foreground mb-1">{t('designAssistant.playerGoal')}</h4>
                   <ul className="text-sm text-foreground space-y-1">
                     {analysis.playerGoals.map((item, i) => (
                       <li key={i} className="flex items-start gap-2">
@@ -145,7 +148,7 @@ const DesignAssistant = ({ prompt, onUseOptimized }: DesignAssistantProps) => {
               {/* Suggested Features */}
               {analysis.suggestedFeatures && analysis.suggestedFeatures.length > 0 && (
                 <div>
-                  <h4 className="text-xs font-medium text-muted-foreground mb-1">💡 推荐功能</h4>
+                  <h4 className="text-xs font-medium text-muted-foreground mb-1">{t('designAssistant.recommendedFeatures')}</h4>
                   <div className="flex flex-wrap gap-1.5">
                     {analysis.suggestedFeatures.map((item, i) => (
                       <span
@@ -162,7 +165,7 @@ const DesignAssistant = ({ prompt, onUseOptimized }: DesignAssistantProps) => {
               {/* Visual Style */}
               {analysis.visualStyle && (
                 <div>
-                  <h4 className="text-xs font-medium text-muted-foreground mb-1">🎨 视觉风格</h4>
+                  <h4 className="text-xs font-medium text-muted-foreground mb-1">{t('designAssistant.visualStyle')}</h4>
                   <p className="text-sm text-foreground">{analysis.visualStyle}</p>
                 </div>
               )}

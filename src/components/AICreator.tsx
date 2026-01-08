@@ -9,6 +9,8 @@ import DesignAssistant from "./DesignAssistant";
 import { gameLabService } from "@/services/gameLabService";
 import { creationService } from "@/services/creationService";
 import { ErrorHandler } from "@/lib/errorHandler";
+import { useTranslation } from "react-i18next";
+import { getRandomMessage } from "@/lib/utils/messageUtils";
 
 // Game-focused suggestions to inspire creativity
 const gameSuggestions = [
@@ -34,14 +36,6 @@ const weirderSuggestions = [
   "🎵 Beat maker",
 ];
 
-const loadingSteps = [
-  { icon: Wand2, text: "理解你的创意...", duration: 2000 },
-  { icon: Palette, text: "设计界面...", duration: 3000 },
-  { icon: Code, text: "编写代码...", duration: 4000 },
-  { icon: Zap, text: "添加魔法...", duration: 2000 },
-  { icon: Gamepad2, text: "即将完成...", duration: 1500 },
-];
-
 interface AICreatorProps {
   initialPrompt?: string;
   showSuggestions?: boolean;
@@ -50,6 +44,15 @@ interface AICreatorProps {
 const AICreator = ({ initialPrompt = "", showSuggestions = true }: AICreatorProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  
+  const loadingSteps = [
+    { icon: Wand2, text: t('aiCreator.understanding'), duration: 2000 },
+    { icon: Palette, text: t('aiCreator.designing'), duration: 3000 },
+    { icon: Code, text: t('aiCreator.coding'), duration: 4000 },
+    { icon: Zap, text: t('aiCreator.addingMagic'), duration: 2000 },
+    { icon: Gamepad2, text: t('aiCreator.almostDone'), duration: 1500 },
+  ];
   const [input, setInput] = useState(initialPrompt);
   const [isFocused, setIsFocused] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -155,7 +158,7 @@ const AICreator = ({ initialPrompt = "", showSuggestions = true }: AICreatorProp
               is_public: false,
             });
 
-            toast.success("创作生成成功!");
+            toast.success(getRandomMessage(t('aiCreator.creationSuccess')));
             navigate(`/studio/${creation.id}`);
           } catch (error) {
             ErrorHandler.logError(error, 'AICreator.handleCreate');
@@ -174,16 +177,36 @@ const AICreator = ({ initialPrompt = "", showSuggestions = true }: AICreatorProp
             prompt: input.trim(),
             title: autoTitle,
           }));
-          toast.success("创作生成成功!");
+          toast.success(getRandomMessage(t('aiCreator.creationSuccess')));
           navigate('/studio/new');
         }
       } else {
-        throw new Error("Could not extract valid HTML");
+        throw new Error(getRandomMessage(t('aiCreator.htmlExtractError')));
       }
     } catch (error) {
       ErrorHandler.logError(error, 'AICreator.handleCreate');
-      const errorMessage = ErrorHandler.getUserMessage(error);
-      toast.error(errorMessage || "生成失败");
+      let errorMessage = ErrorHandler.getUserMessage(error);
+      
+      // 优化错误消息，让它更风趣
+      const errorStr = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+      
+      if (errorStr.includes("代码藏得太深") || errorStr.includes("extract") || errorStr.includes("valid html") || errorStr.includes("hide and seek") || errorStr.includes("went MIA")) {
+        errorMessage = getRandomMessage(t('aiCreator.htmlExtractError'));
+      } else if (errorStr.includes("429") || errorStr.includes("rate limit")) {
+        errorMessage = getRandomMessage(t('aiCreator.rateLimit'));
+      } else if (errorStr.includes("402") || errorStr.includes("quota")) {
+        errorMessage = getRandomMessage(t('aiCreator.quotaExceeded'));
+      } else if (errorStr.includes("timeout")) {
+        errorMessage = getRandomMessage(t('aiCreator.timeout'));
+      } else if (errorStr.includes("network") || errorStr.includes("fetch")) {
+        errorMessage = getRandomMessage(t('aiCreator.networkError'));
+      } else if (errorStr.includes("500") || errorStr.includes("server")) {
+        errorMessage = getRandomMessage(t('aiCreator.serverError'));
+      } else if (!errorMessage || errorMessage === "生成失败") {
+        errorMessage = getRandomMessage(t('aiCreator.creationFailed'));
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setIsGenerating(false);
     }
@@ -241,7 +264,7 @@ const AICreator = ({ initialPrompt = "", showSuggestions = true }: AICreatorProp
                   {loadingSteps[loadingStep].text}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  创建: "{currentPrompt.slice(0, 30)}{currentPrompt.length > 30 ? '...' : ''}"
+                  {t('aiCreator.creating')}: "{currentPrompt.slice(0, 30)}{currentPrompt.length > 30 ? '...' : ''}"
                 </p>
               </div>
 
@@ -259,7 +282,7 @@ const AICreator = ({ initialPrompt = "", showSuggestions = true }: AICreatorProp
               
               {/* Progress percentage */}
               <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-                <span>生成中</span>
+                <span>{t('aiCreator.generating')}</span>
                 <span className="font-mono">{progress}%</span>
               </div>
 
@@ -305,7 +328,7 @@ const AICreator = ({ initialPrompt = "", showSuggestions = true }: AICreatorProp
                   onFocus={() => setIsFocused(true)}
                   onBlur={() => setIsFocused(false)}
                   onKeyDown={handleKeyDown}
-                  placeholder="描述你想创建的游戏或工具... 例如：一个贪吃蛇游戏"
+                  placeholder={t('aiCreator.descriptionPlaceholder')}
                   className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground resize-none outline-none text-base min-h-[70px]"
                   rows={2}
                   disabled={isGenerating}
@@ -321,7 +344,7 @@ const AICreator = ({ initialPrompt = "", showSuggestions = true }: AICreatorProp
                 <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono border border-border">Ctrl</kbd>
                 <span>+</span>
                 <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono border border-border">Enter</kbd>
-                <span className="ml-1">开始创作</span>
+                <span className="ml-1">{t('aiCreator.startCreating')}</span>
               </div>
               <Button
                 size="sm"

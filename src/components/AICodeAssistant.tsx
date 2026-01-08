@@ -5,6 +5,8 @@ import { Sparkles, Send, Loader2, X, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/apiClient";
 import { ErrorHandler } from "@/lib/errorHandler";
+import { useTranslation } from "react-i18next";
+import { getRandomMessage } from "@/lib/utils/messageUtils";
 
 interface AICodeAssistantProps {
   currentCode: string;
@@ -12,13 +14,14 @@ interface AICodeAssistantProps {
 }
 
 const AICodeAssistant = ({ currentCode, onCodeUpdate }: AICodeAssistantProps) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
     if (!prompt.trim()) {
-      toast.error("Please describe what you want to change");
+      toast.error(getRandomMessage(t('aiCodeAssistant.promptRequired')));
       return;
     }
 
@@ -33,13 +36,13 @@ const AICodeAssistant = ({ currentCode, onCodeUpdate }: AICodeAssistantProps) =>
         onCodeUpdate(response.code);
         setPrompt("");
         setIsOpen(false);
-        toast.success("代码已更新！");
+        toast.success(getRandomMessage(t('aiCodeAssistant.codeUpdated')));
       } else {
-        throw new Error("未返回代码");
+        throw new Error(getRandomMessage(t('aiCodeAssistant.noCodeReturned')));
       }
     } catch (error) {
       ErrorHandler.logError(error, 'AICodeAssistant.handleSubmit');
-      toast.error(ErrorHandler.getUserMessage(error) || "更新代码失败，请重试");
+      toast.error(ErrorHandler.getUserMessage(error) || getRandomMessage(t('aiCodeAssistant.updateFailed')));
     } finally {
       setLoading(false);
     }
@@ -64,7 +67,7 @@ const AICodeAssistant = ({ currentCode, onCodeUpdate }: AICodeAssistantProps) =>
           className="gap-2 bg-background/95 backdrop-blur-sm shadow-lg border-primary/30 hover:border-primary/50"
         >
           <Wand2 className="w-4 h-4 text-primary" />
-          <span className="text-primary font-medium">AI Assist</span>
+          <span className="text-primary font-medium">{t('aiCodeAssistant.aiAssist')}</span>
         </Button>
       </div>
     );
@@ -75,7 +78,7 @@ const AICodeAssistant = ({ currentCode, onCodeUpdate }: AICodeAssistantProps) =>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-primary" />
-          <span className="font-medium text-foreground">AI Code Assistant</span>
+          <span className="font-medium text-foreground">{t('aiCodeAssistant.title')}</span>
         </div>
         <Button
           variant="ghost"
@@ -104,7 +107,7 @@ const AICodeAssistant = ({ currentCode, onCodeUpdate }: AICodeAssistantProps) =>
         <Textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Describe what you want to change... (e.g., 'Add a score counter' or 'Change colors to blue theme')"
+          placeholder={t('aiCodeAssistant.placeholder')}
           className="min-h-[80px] resize-none text-sm flex-1"
           onKeyDown={(e) => {
             if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
@@ -116,7 +119,7 @@ const AICodeAssistant = ({ currentCode, onCodeUpdate }: AICodeAssistantProps) =>
 
       <div className="flex items-center justify-between mt-3">
         <span className="text-xs text-muted-foreground">
-          Ctrl/Cmd + Enter to submit
+          {t('aiCodeAssistant.shortcutHint')}
         </span>
         <Button
           onClick={handleSubmit}
@@ -129,7 +132,7 @@ const AICodeAssistant = ({ currentCode, onCodeUpdate }: AICodeAssistantProps) =>
           ) : (
             <Send className="w-4 h-4" />
           )}
-          Apply Changes
+          {t('aiCodeAssistant.applyChanges')}
         </Button>
       </div>
     </div>

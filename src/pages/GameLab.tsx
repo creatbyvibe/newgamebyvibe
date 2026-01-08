@@ -24,6 +24,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { gameLabService } from "@/services/gameLabService";
 import { creationService } from "@/services/creationService";
 import { ErrorHandler } from "@/lib/errorHandler";
+import { getRandomMessage } from "@/lib/utils/messageUtils";
 
 interface GameType {
   id: string;
@@ -76,11 +77,11 @@ const GameLab = () => {
   const [progress, setProgress] = useState(0);
   
   const loadingSteps = [
-    { text: "正在分析游戏机制...", icon: Brain },
-    { text: "构思融合方案...", icon: Sparkles },
-    { text: "生成游戏代码...", icon: Wand2 },
-    { text: "优化游戏体验...", icon: Zap },
-    { text: "即将完成...", icon: Gamepad2 },
+    { text: t('gameLab.analyzingMechanics'), icon: Brain },
+    { text: t('gameLab.conceptualizing'), icon: Sparkles },
+    { text: t('gameLab.generatingCode'), icon: Wand2 },
+    { text: t('gameLab.optimizing'), icon: Zap },
+    { text: t('gameLab.almostDone'), icon: Gamepad2 },
   ];
 
   const toggleGame = (game: GameType) => {
@@ -89,7 +90,7 @@ const GameLab = () => {
     } else if (selectedGames.length < 3) {
       setSelectedGames(prev => [...prev, game]);
     } else {
-      toast.error("最多选择3个游戏进行融合");
+      toast.error(getRandomMessage(t('gameLab.maxGamesSelected')));
     }
   };
 
@@ -100,7 +101,7 @@ const GameLab = () => {
 
   const handleFusion = async () => {
     if (selectedGames.length < 2) {
-      toast.error("至少选择2个游戏进行融合");
+      toast.error(getRandomMessage(t('gameLab.minGamesRequired')));
       return;
     }
 
@@ -167,13 +168,13 @@ Use a fun, colorful visual style.`;
         
         // 针对特定错误提供更友好的提示
         if (error?.status === 429 || error?.message?.includes("429") || error?.code === 'RATE_LIMIT') {
-          errorMsg = "请求过于频繁，请稍等片刻后重试";
+          errorMsg = getRandomMessage(t('gameLab.rateLimit'));
         } else if (error?.status === 402 || error?.message?.includes("402") || error?.code === 'QUOTA_EXCEEDED') {
-          errorMsg = "API 使用额度已用完，请稍后重试";
+          errorMsg = getRandomMessage(t('gameLab.quotaExceeded'));
         } else if (error?.status === 400 || error?.message?.includes("400") || error?.code === 'BAD_REQUEST') {
-          errorMsg = "请求参数错误，请重试";
+          errorMsg = getRandomMessage(t('gameLab.badRequest'));
         } else if (error?.status === 500 || error?.message?.includes("500") || error?.code === 'SERVER_ERROR') {
-          errorMsg = "服务器错误，请稍后重试";
+          errorMsg = getRandomMessage(t('gameLab.serverError'));
         }
         
         throw new Error(errorMsg);
@@ -215,7 +216,7 @@ Use a fun, colorful visual style.`;
       if (!htmlCode || (!htmlCode.includes("<!DOCTYPE html") && !htmlCode.includes("<html"))) {
         // Log the issue for debugging
         console.error("HTML extraction failed. Full content preview:", fullContent.substring(0, 500));
-        throw new Error("无法从 AI 响应中提取有效的 HTML 代码。AI 可能没有生成完整的游戏代码，请尝试重新生成。");
+        throw new Error(getRandomMessage(t('gameLab.htmlExtractError')));
       }
 
       // 完成进度
@@ -238,51 +239,51 @@ Use a fun, colorful visual style.`;
       fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:185',message:'Fusion success',data:{hasCode:!!htmlCode,codeLength:htmlCode.length,hasConcept:!!concept},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'ALL'})}).catch(()=>{});
       // #endregion
 
-      toast.success(t('gameLab.success'));
+      toast.success(getRandomMessage(t('gameLab.success')));
     } catch (error) {
       ErrorHandler.logError(error, 'GameLab.handleFusion');
       
       // 详细的错误分类和友好提示
-      let errorMessage = "融合失败，请重试";
+      let errorMessage = getRandomMessage(t('gameLab.fusionFailed'));
       
       if (error instanceof Error) {
         const errorMsg = error.message.toLowerCase();
         
         // 网络错误
         if (errorMsg.includes("fetch") || errorMsg.includes("network") || errorMsg.includes("failed to fetch")) {
-          errorMessage = "网络连接失败，请检查网络后重试";
+          errorMessage = getRandomMessage(t('gameLab.networkError'));
         }
         // API 错误
         else if (errorMsg.includes("429") || errorMsg.includes("rate limit")) {
-          errorMessage = "请求过于频繁，请稍等片刻后重试";
+          errorMessage = getRandomMessage(t('gameLab.rateLimit'));
         }
         // 认证错误
         else if (errorMsg.includes("401") || errorMsg.includes("unauthorized") || errorMsg.includes("auth")) {
-          errorMessage = "认证失败，请刷新页面后重试";
+          errorMessage = getRandomMessage(t('gameLab.unauthorized'));
         }
         // 服务器错误
         else if (errorMsg.includes("500") || errorMsg.includes("server")) {
-          errorMessage = "服务器暂时无法响应，请稍后重试";
+          errorMessage = getRandomMessage(t('gameLab.serverError'));
         }
         // API Key 错误
         else if (errorMsg.includes("api key") || errorMsg.includes("key")) {
-          errorMessage = "API 配置错误，请联系管理员";
+          errorMessage = getRandomMessage(t('gameLab.apiKeyError'));
         }
         // 生成失败
         else if (errorMsg.includes("generate") || errorMsg.includes("generation")) {
-          errorMessage = "游戏生成失败，可能是内容过于复杂，请尝试其他组合";
+          errorMessage = getRandomMessage(t('gameLab.generationFailed'));
         }
         // 解析错误
         else if (errorMsg.includes("parse") || errorMsg.includes("json")) {
-          errorMessage = "数据解析失败，请重试";
+          errorMessage = getRandomMessage(t('gameLab.parseError'));
         }
         // 超时
         else if (errorMsg.includes("timeout") || errorMsg.includes("time out")) {
-          errorMessage = "生成超时，请重试或选择更简单的游戏组合";
+          errorMessage = getRandomMessage(t('gameLab.timeout'));
         }
         // HTML 提取错误
-        else if (errorMsg.includes("无法从 AI 响应中提取") || errorMsg.includes("extract") || errorMsg.includes("valid HTML")) {
-          errorMessage = "无法提取有效的游戏代码，AI 可能没有生成完整代码。请尝试重新生成或选择其他游戏组合。";
+        else if (errorMsg.includes("无法从 AI 响应中提取") || errorMsg.includes("extract") || errorMsg.includes("valid HTML") || errorMsg.includes("代码藏得太深") || errorMsg.includes("魔法师这次有点调皮") || errorMsg.includes("hide and seek") || errorMsg.includes("went MIA")) {
+          errorMessage = getRandomMessage(t('gameLab.htmlExtractError'));
         }
         // 其他错误，显示原始消息（如果友好）
         else if (error.message.length < 100) {
@@ -570,7 +571,7 @@ Use a fun, colorful visual style.`;
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <Sparkles className="w-5 h-5 text-primary" />
-                      <span className="text-sm text-primary font-medium">融合成功!</span>
+                      <span className="text-sm text-primary font-medium">{getRandomMessage(t('gameLab.fusionSuccess'))}</span>
                     </div>
                     <h3 className="font-display text-2xl font-bold mb-2">
                       {generatedGame.name}
