@@ -7,19 +7,41 @@ const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY |
 
 // 检查环境变量
 if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-  console.error('Missing Supabase environment variables:', {
-    hasUrl: !!SUPABASE_URL,
-    hasKey: !!SUPABASE_PUBLISHABLE_KEY,
-  });
+  const errorMsg = '❌ Supabase 环境变量未配置！\n\n' +
+    '请在 Vercel Dashboard 或本地 .env 文件中配置：\n' +
+    '- VITE_SUPABASE_URL\n' +
+    '- VITE_SUPABASE_PUBLISHABLE_KEY\n\n' +
+    '当前状态：\n' +
+    `- VITE_SUPABASE_URL: ${SUPABASE_URL ? '✅' : '❌ 缺失'}\n` +
+    `- VITE_SUPABASE_PUBLISHABLE_KEY: ${SUPABASE_PUBLISHABLE_KEY ? '✅' : '❌ 缺失'}`;
+  
+  console.error(errorMsg);
+  
+  // 在开发环境下显示警告
+  if (import.meta.env.DEV) {
+    alert(errorMsg);
+  }
 }
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: {
-    storage: localStorage,
-    persistSession: true,
-    autoRefreshToken: true,
+// 即使环境变量缺失，也创建客户端（避免应用崩溃），但会在调用时失败
+export const supabase = createClient<Database>(
+  SUPABASE_URL || 'https://placeholder.supabase.co',
+  SUPABASE_PUBLISHABLE_KEY || 'placeholder-key',
+  {
+    auth: {
+      storage: localStorage,
+      persistSession: true,
+      autoRefreshToken: true,
+    }
   }
-});
+);
+
+// 导出配置检查函数
+export const isSupabaseConfigured = () => {
+  return !!(SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY && 
+           !SUPABASE_URL.includes('placeholder') && 
+           !SUPABASE_PUBLISHABLE_KEY.includes('placeholder'));
+};

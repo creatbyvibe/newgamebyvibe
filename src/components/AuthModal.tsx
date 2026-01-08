@@ -33,6 +33,22 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // 检查 Supabase 配置
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    
+    if (!supabaseUrl || !supabaseKey || 
+        supabaseUrl.includes('placeholder') || 
+        supabaseKey.includes('placeholder')) {
+      toast.error(
+        "Supabase 未配置！请在 Vercel Dashboard 的 Environment Variables 中添加：\n" +
+        "- VITE_SUPABASE_URL\n" +
+        "- VITE_SUPABASE_PUBLISHABLE_KEY",
+        { duration: 8000 }
+      );
+      return;
+    }
+    
     // 验证输入
     if (!email.trim() || !password.trim()) {
       toast.error(t('auth.fillAllFields') || "请填写所有字段");
@@ -66,8 +82,12 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
           errorMessage = "请先验证您的邮箱";
         } else if (error.message.includes("Password")) {
           errorMessage = "密码格式不正确";
+        } else if (error.message.includes("fetch") || error.message.includes("network")) {
+          errorMessage = "网络错误，请检查 Supabase 配置或网络连接";
+        } else if (error.message.includes("invalid") && error.message.includes("api")) {
+          errorMessage = "无效的 API 配置，请检查环境变量 VITE_SUPABASE_URL 和 VITE_SUPABASE_PUBLISHABLE_KEY";
         }
-        toast.error(errorMessage);
+        toast.error(errorMessage, { duration: 6000 });
       } else {
         if (isLogin) {
           toast.success("欢迎回来！");
@@ -77,6 +97,14 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
         onOpenChange(false);
         setEmail("");
         setPassword("");
+      }
+    } catch (err: any) {
+      console.error("Auth error:", err);
+      const errorMsg = err?.message || "未知错误";
+      if (errorMsg.includes("fetch") || errorMsg.includes("network") || errorMsg.includes("Failed to fetch")) {
+        toast.error("无法连接到 Supabase，请检查环境变量配置", { duration: 6000 });
+      } else {
+        toast.error(errorMsg, { duration: 6000 });
       }
     } finally {
       setLoading(false);
