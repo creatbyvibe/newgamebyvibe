@@ -74,20 +74,41 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
       if (error) {
         // 将常见错误信息中文化
         let errorMessage = error.message;
-        if (error.message.includes("Invalid login credentials")) {
+        const errorLower = error.message.toLowerCase();
+        
+        if (errorLower.includes("invalid login credentials") || errorLower.includes("invalid credentials")) {
           errorMessage = "邮箱或密码错误";
-        } else if (error.message.includes("User already registered")) {
+        } else if (errorLower.includes("user already registered") || errorLower.includes("already registered")) {
           errorMessage = "该邮箱已被注册";
-        } else if (error.message.includes("Email not confirmed")) {
+        } else if (errorLower.includes("email not confirmed") || errorLower.includes("email_not_confirmed")) {
           errorMessage = "请先验证您的邮箱";
-        } else if (error.message.includes("Password")) {
+        } else if (errorLower.includes("password")) {
           errorMessage = "密码格式不正确";
-        } else if (error.message.includes("fetch") || error.message.includes("network")) {
-          errorMessage = "网络错误，请检查 Supabase 配置或网络连接";
-        } else if (error.message.includes("invalid") && error.message.includes("api")) {
-          errorMessage = "无效的 API 配置，请检查环境变量 VITE_SUPABASE_URL 和 VITE_SUPABASE_PUBLISHABLE_KEY";
+        } else if (errorLower.includes("fetch") || errorLower.includes("network") || errorLower.includes("failed to fetch")) {
+          errorMessage = "网络连接失败，请检查网络后重试";
+        } else if (errorLower.includes("invalid") && (errorLower.includes("api") || errorLower.includes("key"))) {
+          // API key 错误 - 提供详细的配置指导
+          const hasUrl = !!import.meta.env.VITE_SUPABASE_URL;
+          const hasKey = !!import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+          const url = import.meta.env.VITE_SUPABASE_URL || "未配置";
+          const keyPreview = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY 
+            ? `${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY.substring(0, 20)}...` 
+            : "未配置";
+          
+          errorMessage = `API Key 配置错误！\n\n` +
+            `请在 Vercel Dashboard → Settings → Environment Variables 配置：\n\n` +
+            `1. VITE_SUPABASE_URL\n` +
+            `   当前: ${hasUrl ? '✅ 已配置' : '❌ 未配置'} (${url})\n\n` +
+            `2. VITE_SUPABASE_PUBLISHABLE_KEY (必须是 anon/public key)\n` +
+            `   当前: ${hasKey ? '✅ 已配置' : '❌ 未配置'} (${keyPreview})\n\n` +
+            `配置后需要重新部署才能生效！`;
+        } else if (errorLower.includes("jwt") || errorLower.includes("token")) {
+          errorMessage = "认证令牌错误，请刷新页面后重试";
+        } else if (errorLower.includes("rate limit") || errorLower.includes("429")) {
+          errorMessage = "请求过于频繁，请稍后再试";
         }
-        toast.error(errorMessage, { duration: 6000 });
+        
+        toast.error(errorMessage, { duration: 10000 });
       } else {
         if (isLogin) {
           toast.success("欢迎回来！");

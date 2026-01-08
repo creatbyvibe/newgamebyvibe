@@ -27,6 +27,13 @@ if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
 // import { supabase } from "@/integrations/supabase/client";
 
 // 即使环境变量缺失，也创建客户端（避免应用崩溃），但会在调用时失败
+// 检查 key 是否是有效的格式
+const isValidKey = (key: string) => {
+  if (!key || key === 'placeholder-key') return false;
+  // Supabase anon key 通常是 JWT token，以 eyJ 开头
+  return key.startsWith('eyJ') || key.startsWith('sb_publishable_');
+};
+
 export const supabase = createClient<Database>(
   SUPABASE_URL || 'https://placeholder.supabase.co',
   SUPABASE_PUBLISHABLE_KEY || 'placeholder-key',
@@ -38,6 +45,16 @@ export const supabase = createClient<Database>(
     }
   }
 );
+
+// 验证配置的有效性
+if (SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY) {
+  if (!SUPABASE_URL.startsWith('https://') || SUPABASE_URL.includes('placeholder')) {
+    console.warn('⚠️ VITE_SUPABASE_URL 格式可能不正确:', SUPABASE_URL);
+  }
+  if (!isValidKey(SUPABASE_PUBLISHABLE_KEY)) {
+    console.warn('⚠️ VITE_SUPABASE_PUBLISHABLE_KEY 格式可能不正确。应该是以 "eyJ" 开头的 JWT token 或 "sb_publishable_" 开头的 key');
+  }
+}
 
 // 导出配置检查函数
 export const isSupabaseConfigured = () => {
