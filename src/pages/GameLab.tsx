@@ -507,38 +507,40 @@ const GameLab = () => {
             </div>
 
             {showAdvancedOptions && (
-              <Tabs defaultValue="category" className="space-y-4">
-                <TabsList>
-                  <TabsTrigger value="category">游戏类别</TabsTrigger>
-                  <TabsTrigger value="template" disabled={!selectedCategory}>
-                    模板选择
-                  </TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="category">
-                  <GameCategorySelector
-                    selectedCategoryId={selectedCategory?.id}
-                    onSelect={(category) => {
-                      setSelectedCategory(category);
-                      setSelectedTemplate(null); // Reset template when category changes
-                    }}
-                  />
-                </TabsContent>
-                
-                <TabsContent value="template">
-                  {selectedCategory ? (
-                    <TemplatePreview
-                      categoryId={selectedCategory.id}
-                      selectedTemplateId={selectedTemplate?.id}
-                      onSelect={(template) => setSelectedTemplate(template)}
+              <div className="bg-card border rounded-xl p-6">
+                <Tabs defaultValue="category" className="space-y-4">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="category">{t('gameLab.gameCategory')}</TabsTrigger>
+                    <TabsTrigger value="template" disabled={!selectedCategory}>
+                      {t('gameLab.templateSelection')}
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="category" className="mt-4">
+                    <GameCategorySelector
+                      selectedCategoryId={selectedCategory?.id}
+                      onSelect={(category) => {
+                        setSelectedCategory(category);
+                        setSelectedTemplate(null); // Reset template when category changes
+                      }}
                     />
-                  ) : (
-                    <div className="text-center p-8 text-muted-foreground">
-                      <p>请先选择游戏类别</p>
-                    </div>
-                  )}
-                </TabsContent>
-              </Tabs>
+                  </TabsContent>
+                  
+                  <TabsContent value="template" className="mt-4">
+                    {selectedCategory ? (
+                      <TemplatePreview
+                        categoryId={selectedCategory.id}
+                        selectedTemplateId={selectedTemplate?.id}
+                        onSelect={(template) => setSelectedTemplate(template)}
+                      />
+                    ) : (
+                      <div className="text-center p-8 text-muted-foreground">
+                        <p>{t('gameLab.selectCategoryFirst')}</p>
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
+              </div>
             )}
           </div>
 
