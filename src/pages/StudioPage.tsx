@@ -47,22 +47,21 @@ const StudioPage = () => {
 
   // Load creation data
   useEffect(() => {
-    const loadData = async () => {
-      // 如果认证还在加载，等待完成（最多等待 3 秒）
-      if (authLoading) {
-        // 设置超时，避免无限等待
-        const timeoutId = setTimeout(() => {
-          console.warn('Auth loading timeout, proceeding anyway');
-          setLoading(false);
-        }, 3000);
-        
-        // 返回清理函数，当 authLoading 变为 false 时会重新触发 useEffect
-        return () => {
-          clearTimeout(timeoutId);
-        };
-      }
+    // 如果认证还在加载，等待完成（最多等待 5 秒后强制继续）
+    if (authLoading) {
+      const timeoutId = setTimeout(() => {
+        console.warn('Auth loading timeout after 5s, proceeding anyway');
+        setLoading(false);
+      }, 5000);
       
-      // 认证加载完成，开始加载数据
+      // 返回清理函数，当 authLoading 变为 false 时会重新触发 useEffect
+      return () => {
+        clearTimeout(timeoutId);
+      };
+    }
+    
+    // 认证加载完成，开始加载数据
+    const loadData = async () => {
       try {
         if (id === 'new') {
           // Load from sessionStorage for new/temp creations
@@ -149,6 +148,11 @@ const StudioPage = () => {
     };
     
     loadData();
+    
+    // 清理函数
+    return () => {
+      // 如果组件卸载，可以在这里清理资源
+    };
   }, [id, user, authLoading, navigate, toast]);
 
   // Save as draft for new creations
