@@ -113,7 +113,13 @@
     "equalsQuestion": "= ???",
     "fusionPrompt": "Create a unique fusion game that combines: {{games}}. The game should creatively merge the core mechanics of each game into something new and interesting. Make sure the game is fully playable with clear instructions shown on screen. Use a fun, colorful visual style.",
     "fusionLabel": "Fusion:",
-    "minGamesHint": "Select at least 2 games to start fusion"
+    "minGamesHint": "Select at least 2 games to start fusion",
+    "showAdvancedOptions": "Show Advanced Options",
+    "hideAdvancedOptions": "Hide Advanced Options",
+    "gameCategory": "Game Category",
+    "templateSelection": "Template Selection",
+    "selectCategoryFirst": "Please select a game category first",
+    "categoryDescription": "Select a specific game category (e.g., Card Games) or use templates to get started quickly"
   },
   "aiCreator": {
     "understanding": "Understanding your creativity...",
