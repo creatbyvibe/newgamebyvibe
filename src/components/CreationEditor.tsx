@@ -22,10 +22,12 @@ import {
   Menu,
 } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import CodeEditor from "./CodeEditor";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { apiClient } from "@/lib/apiClient";
+import { creationService } from "@/services/creationService";
+import { ErrorHandler } from "@/lib/errorHandler";
 
 interface CreationEditorProps {
   initialCode: string;
@@ -85,17 +87,13 @@ const CreationEditor = ({
       
       if (type === 'GAME_SAVE' && user && creationId) {
         try {
-          const response = await supabase.functions.invoke('game-save', {
-            body: {
-              action: 'save',
-              creationId,
-              saveSlot: data?.slot || 1,
-              saveData: data?.saveData || data,
-              saveName: data?.name || 'Auto Save',
-            },
+          const response = await apiClient.invokeFunction('game-save', {
+            action: 'save',
+            creationId,
+            saveSlot: data?.slot || 1,
+            saveData: data?.saveData || data,
+            saveName: data?.name || 'Auto Save',
           });
-          
-          if (response.error) throw response.error;
           
           // Notify game of successful save
           iframeRef.current?.contentWindow?.postMessage(
@@ -104,9 +102,9 @@ const CreationEditor = ({
           );
           toast.success('游戏已保存到云端');
         } catch (error) {
-          console.error('Cloud save error:', error);
+          ErrorHandler.logError(error, 'CreationEditor.GAME_SAVE');
           iframeRef.current?.contentWindow?.postMessage(
-            { type: 'GAME_SAVE_ERROR', error: 'Save failed' },
+            { type: 'GAME_SAVE_ERROR', error: ErrorHandler.getUserMessage(error) },
             '*'
           );
         }
@@ -114,26 +112,23 @@ const CreationEditor = ({
       
       if (type === 'GAME_LOAD_REQUEST' && user && creationId) {
         try {
-          const response = await supabase.functions.invoke('game-save', {
-            body: {
-              action: 'load',
-              creationId,
-              saveSlot: data?.slot || 1,
-            },
+          const response = await apiClient.invokeFunction<{ save?: { save_data: any } }>('game-save', {
+            action: 'load',
+            creationId,
+            saveSlot: data?.slot || 1,
           });
-          
-          if (response.error) throw response.error;
           
           // Send save data back to game
           iframeRef.current?.contentWindow?.postMessage(
             { 
               type: 'GAME_LOAD_RESPONSE', 
-              saveData: response.data?.save?.save_data || null,
+              saveData: response?.save?.save_data || null,
               slot: data?.slot || 1,
             },
             '*'
           );
         } catch (error) {
+          ErrorHandler.logError(error, 'CreationEditor.GAME_LOAD_REQUEST');
           console.error('Cloud load error:', error);
           iframeRef.current?.contentWindow?.postMessage(
             { type: 'GAME_LOAD_RESPONSE', saveData: null, error: 'Load failed' },
@@ -160,23 +155,17 @@ const CreationEditor = ({
 
     setAiLoading(true);
     try {
-      const response = await supabase.functions.invoke("ai-code-assist", {
-        body: { 
-          prompt: aiPrompt.trim(),
-          currentCode: code 
-        },
+      const response = await apiClient.invokeFunction<{ code: string }>("ai-code-assist", {
+        prompt: aiPrompt.trim(),
+        currentCode: code,
       });
 
-      if (response.error) {
-        throw new Error(response.error.message);
-      }
-
-      const newCode = response.data?.code;
+      const newCode = response?.code;
       if (newCode) {
         setCode(newCode);
         setPreviewCode(newCode);
         setAiPrompt("");
-        toast.success("Changes applied!");
+        toast.success("修改已应用！");
       } else {
         throw new Error("No code returned");
       }
@@ -202,39 +191,27 @@ const CreationEditor = ({
     setSaving(true);
     try {
       if (creationId) {
-        const { error } = await supabase
-          .from("creations")
-          .update({
-            title: title.trim(),
-            html_code: code,
-            is_public: isPublic,
-          })
-          .eq("id", creationId);
-
-        if (error) throw error;
-        toast.success("Creation updated!");
-      } else {
-        const { data, error } = await supabase
-          .from("creations")
-          .insert({
-            user_id: user.id,
-            title: title.trim(),
-            prompt,
-            html_code: code,
-            is_public: isPublic,
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-        toast.success("Creation saved!");
-        if (onSaved && data) {
-          onSaved(data.id);
+        await creationService.updateCreation(creationId, {
+          title: title.trim(),
+          html_code: code,
+          is_public: isPublic,
+        });
+        toast.success("创作已更新！");
+      } else if (user) {
+        const creation = await creationService.createCreation({
+          title: title.trim(),
+          prompt,
+          html_code: code,
+          is_public: isPublic,
+        });
+        toast.success("创作已保存！");
+        if (onSaved) {
+          onSaved(creation.id);
         }
       }
     } catch (error) {
-      console.error("Save error:", error);
-      toast.error("Failed to save");
+      ErrorHandler.logError(error, 'CreationEditor.handleSave');
+      toast.error(ErrorHandler.getUserMessage(error));
     } finally {
       setSaving(false);
     }

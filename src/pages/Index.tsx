@@ -2,6 +2,8 @@ import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import AICreator from "@/components/AICreator";
 import WorkGallery from "@/components/WorkGallery";
+import { SEO } from "@/components/SEO";
+import { useTranslation } from "react-i18next";
 import {
   Sparkles,
   Github,
@@ -42,9 +44,14 @@ const featuredTemplates = [
 
 const Index = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen bg-background overflow-hidden">
+      <SEO
+        title="ByVibe - AI 游戏创作平台"
+        description="用 AI 将你的想法变成可玩的游戏和实用工具。无需编程，立即开始。"
+      />
       <Navbar />
 
       {/* Hero Section - More Compact */}
@@ -61,14 +68,14 @@ const Index = () => {
             <div className="inline-flex items-center gap-2 bg-primary/10 rounded-full px-4 py-1.5 mb-4 animate-fade-in">
               <Sparkles className="w-3.5 h-3.5 text-primary" />
               <span className="text-sm font-medium text-primary tracking-wide">
-                用 AI 创造一切
+                {t('home.badge')}
               </span>
             </div>
 
             {/* Title */}
             <h1 className="font-display animate-fade-in" style={{ animationDelay: "100ms" }}>
-              <span className="block text-foreground">随心创造,</span>
-              <span className="block text-gradient-primary mt-1">分享快乐</span>
+              <span className="block text-foreground">{t('home.titleLine1')}</span>
+              <span className="block text-gradient-primary mt-1">{t('home.titleLine2')}</span>
             </h1>
 
             {/* Subtitle */}
@@ -76,8 +83,8 @@ const Index = () => {
               className="text-lg text-muted-foreground max-w-md mt-4 animate-fade-in"
               style={{ animationDelay: "200ms" }}
             >
-              用 AI 将你的想法变成可玩的游戏和实用工具。
-              <span className="text-foreground font-medium">无需编程，立即开始。</span>
+              {t('home.subtitle')}{' '}
+              <span className="text-foreground font-medium">{t('home.subtitleHighlight')}</span>
             </p>
           </div>
 
@@ -125,11 +132,11 @@ const Index = () => {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-display text-lg font-semibold text-foreground">游戏实验室</h3>
-                    <span className="px-2 py-0.5 text-xs bg-purple-500/20 text-purple-600 rounded-full">新</span>
+                    <h3 className="font-display text-lg font-semibold text-foreground">{t('home.gameLab')}</h3>
+                    <span className="px-2 py-0.5 text-xs bg-purple-500/20 text-purple-600 rounded-full">{t('home.gameLabNew')}</span>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    融合多种游戏类型，创造独一无二的玩法。
+                    {t('home.gameLabDesc')}
                   </p>
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
@@ -148,15 +155,15 @@ const Index = () => {
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="font-display text-xl text-foreground">精选模板</h2>
-              <p className="text-sm text-muted-foreground mt-1">快速开始你的创作</p>
+              <h2 className="font-display text-xl text-foreground">{t('home.featuredTemplates')}</h2>
+              <p className="text-sm text-muted-foreground mt-1">{t('home.featuredTemplatesDesc')}</p>
             </div>
             <Button 
               variant="ghost" 
               className="gap-2"
               onClick={() => navigate('/inspiration')}
             >
-              查看全部
+              {t('home.viewAll')}
               <ArrowRight className="w-4 h-4" />
             </Button>
           </div>
@@ -240,7 +247,7 @@ const Index = () => {
                 </span>
               </div>
               <p className="text-sm text-muted-foreground mt-2">
-                用 AI 创造一切，分享你的创意
+                {t('home.footerDesc')}
               </p>
             </div>
 
@@ -291,7 +298,7 @@ const Index = () => {
 
           <div className="mt-8 pt-6 border-t border-border text-center">
             <p className="text-sm text-muted-foreground">
-              © 2025 byvibe.ai. 保留所有权利。
+              {t('home.copyright')}
             </p>
           </div>
         </div>

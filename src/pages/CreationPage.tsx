@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "react-i18next";
 import Navbar from "@/components/Navbar";
 import ShareButtons from "@/components/ShareButtons";
 import CommentsSection from "@/components/CommentsSection";
+import { creationService } from "@/services/creationService";
+import { userService } from "@/services/userService";
+import { ErrorHandler } from "@/lib/errorHandler";
 import {
   Play,
   Heart,
@@ -42,6 +45,7 @@ const CreationPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [creation, setCreation] = useState<Creation | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -64,125 +68,89 @@ const CreationPage = () => {
   }, [user, id]);
 
   const fetchCreation = async () => {
+    if (!id) return;
+    
     try {
-      const { data, error } = await supabase
-        .from("creations")
-        .select("*")
-        .eq("id", id)
-        .eq("is_public", true)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!data) {
-        toast.error("作品未找到");
+      const data = await creationService.getCreationById(id);
+      
+      if (!data || !data.is_public) {
+        toast.error(t('creation.notPublic'));
         navigate("/");
         return;
       }
 
-      setCreation(data);
-      setLikeCount(data.likes);
+      setCreation(data as Creation);
+      setLikeCount(data.likes || 0);
 
       // Fetch creator profile
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("username, avatar_url")
-        .eq("id", data.user_id)
-        .maybeSingle();
-
+      const profileData = await userService.getProfile(data.user_id);
       if (profileData) {
-        setProfile(profileData);
+        setProfile(profileData as Profile);
       }
     } catch (error) {
-      console.error("Error fetching creation:", error);
-      toast.error("加载作品失败");
+      ErrorHandler.logError(error, 'CreationPage.fetchCreation');
+      toast.error(ErrorHandler.getUserMessage(error));
+      navigate("/");
     } finally {
       setLoading(false);
     }
   };
 
   const incrementPlays = async () => {
-    if (id) {
-      await supabase.rpc("increment_plays", { creation_id: id });
+    if (!id) return;
+    try {
+      await creationService.incrementPlays(id);
+    } catch (error) {
+      // 静默失败，不影响用户体验
+      ErrorHandler.logError(error, 'CreationPage.incrementPlays');
     }
   };
 
   const checkUserInteractions = async () => {
     if (!user || !id) return;
 
-    // Check if liked
-    const { data: likeData } = await supabase
-      .from("creation_likes")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("creation_id", id)
-      .maybeSingle();
+    try {
+      // Check if liked
+      const hasLiked = await userService.hasLiked(user.id, id);
+      setIsLiked(hasLiked);
 
-    setIsLiked(!!likeData);
-
-    // Check if bookmarked
-    const { data: bookmarkData } = await supabase
-      .from("bookmarks")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("creation_id", id)
-      .maybeSingle();
-
-    setIsBookmarked(!!bookmarkData);
+      // Check if bookmarked
+      const hasBookmarked = await userService.hasBookmarked(user.id, id);
+      setIsBookmarked(hasBookmarked);
+    } catch (error) {
+      ErrorHandler.logError(error, 'CreationPage.checkUserInteractions');
+    }
   };
 
   const handleLike = async () => {
-    if (!user) {
+    if (!user || !id) {
       toast.error("请先登录");
       return;
     }
 
     try {
-      if (isLiked) {
-        await supabase
-          .from("creation_likes")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("creation_id", id);
-        setIsLiked(false);
-        setLikeCount((prev) => prev - 1);
-      } else {
-        await supabase.from("creation_likes").insert({
-          user_id: user.id,
-          creation_id: id,
-        });
-        setIsLiked(true);
-        setLikeCount((prev) => prev + 1);
-      }
+      const newLikedState = await userService.toggleLike(user.id, id);
+      setIsLiked(newLikedState);
+      setLikeCount((prev) => (newLikedState ? prev + 1 : Math.max(0, prev - 1)));
     } catch (error) {
-      console.error("Error toggling like:", error);
+      ErrorHandler.logError(error, 'CreationPage.handleLike');
+      toast.error(ErrorHandler.getUserMessage(error));
     }
   };
 
   const handleBookmark = async () => {
-    if (!user) {
+    if (!user || !id) {
       toast.error("请先登录");
       return;
     }
 
     try {
-      if (isBookmarked) {
-        await supabase
-          .from("bookmarks")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("creation_id", id);
-        setIsBookmarked(false);
-        toast.success("已取消收藏");
-      } else {
-        await supabase.from("bookmarks").insert({
-          user_id: user.id,
-          creation_id: id,
-        });
-        setIsBookmarked(true);
-        toast.success("已添加收藏");
-      }
+      const newBookmarkedState = await userService.toggleBookmark(user.id, id);
+      setIsBookmarked(newBookmarkedState);
+      toast.success(newBookmarkedState ? "已添加收藏" : "已取消收藏");
     } catch (error) {
-      console.error("Error toggling bookmark:", error);
+      ErrorHandler.logError(error, 'CreationPage.handleBookmark');
+      toast.error(ErrorHandler.getUserMessage(error));
     }
   };
 
@@ -253,12 +221,12 @@ const CreationPage = () => {
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
                     <User className="w-4 h-4 text-white" />
                   </div>
-                  <span>{profile?.username || "创作者"}</span>
+                  <span>{profile?.username || t('creation.by')}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
                   <span>
-                    {new Date(creation.created_at).toLocaleDateString('zh-CN')}
+                    {new Date(creation.created_at).toLocaleDateString()}
                   </span>
                 </div>
               </div>
@@ -287,7 +255,7 @@ const CreationPage = () => {
                 <Bookmark
                   className={`w-4 h-4 ${isBookmarked ? "fill-current" : ""}`}
                 />
-                收藏
+                {t('creation.bookmark')}
               </Button>
 
               <ShareButtons url={shareUrl} title={creation.title} text={shareText} />
@@ -303,11 +271,11 @@ const CreationPage = () => {
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Eye className="w-4 h-4" />
-                  {creation.plays.toLocaleString()} 次游玩
+                  {creation.plays.toLocaleString()} {t('creation.plays')}
                 </span>
                 <span className="flex items-center gap-1">
                   <Heart className="w-4 h-4" />
-                  {likeCount} 个赞
+                  {likeCount} {t('creation.likes')}
                 </span>
               </div>
               <Button
@@ -317,7 +285,7 @@ const CreationPage = () => {
                 className="gap-2"
               >
                 <Maximize2 className="w-4 h-4" />
-                全屏
+                {t('common.fullscreen')}
               </Button>
             </div>
 
@@ -337,7 +305,7 @@ const CreationPage = () => {
         <div className="max-w-5xl mx-auto px-6 mt-8">
           <div className="bg-muted/30 rounded-2xl p-6 border border-border">
             <h3 className="font-display font-semibold text-foreground mb-4">
-              分享这个作品
+              {t('creation.shareTitle')}
             </h3>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <div className="flex-1 w-full">
@@ -370,7 +338,7 @@ const CreationPage = () => {
           <div className="flex items-center gap-2 mb-6">
             <MessageCircle className="w-5 h-5 text-primary" />
             <h2 className="font-display font-semibold text-xl text-foreground">
-              评论与反馈
+              {t('creation.commentsAndFeedback')}
             </h2>
           </div>
           <CommentsSection creationId={creation.id} />

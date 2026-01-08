@@ -19,8 +19,11 @@ import {
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { gameLabService } from "@/services/gameLabService";
+import { creationService } from "@/services/creationService";
+import { ErrorHandler } from "@/lib/errorHandler";
 
 interface GameType {
   id: string;
@@ -60,6 +63,7 @@ interface GameScore {
 const GameLab = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [selectedGames, setSelectedGames] = useState<GameType[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedGame, setGeneratedGame] = useState<{
@@ -134,125 +138,45 @@ Make sure the game is fully playable with clear instructions shown on screen.
 Use a fun, colorful visual style.`;
 
       // First, get the AI to generate scores and concept
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:105',message:'Before game-lab-fusion invoke',data:{functionName:'game-lab-fusion',body:selectedGames.map(g => ({ name: g.name, description: g.description }))},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
-
-      const conceptResponse = await supabase.functions.invoke('game-lab-fusion', {
-        body: {
-          games: selectedGames.map(g => ({ name: g.name, description: g.description })),
-        },
+      // 使用 gameLabService 融合游戏概念
+      const concept = await gameLabService.fuseGames({
+        selectedGames: selectedGames.map(g => ({
+          id: g.id,
+          name: g.name,
+          emoji: g.emoji,
+          description: g.description,
+        })),
       });
 
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:111',message:'After game-lab-fusion invoke',data:{hasError:!!conceptResponse.error,error:conceptResponse.error,hasData:!!conceptResponse.data,dataKeys:conceptResponse.data?Object.keys(conceptResponse.data):[]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
-
-      if (conceptResponse.error) {
-        const errorMsg = conceptResponse.error.message || String(conceptResponse.error);
-        if (errorMsg.includes("429") || errorMsg.includes("rate limit")) {
-          throw new Error("请求过于频繁，请稍等片刻后重试");
-        } else if (errorMsg.includes("402") || errorMsg.includes("quota")) {
-          throw new Error("API 使用额度已用完，请稍后重试");
-        } else {
-          throw new Error(`概念生成失败: ${errorMsg}`);
-        }
-      }
-
-      const concept = conceptResponse.data;
-
-      // Then generate the actual game code
-      // Get Supabase URL and key from environment (required for streaming response)
-      // Note: We use fetch for streaming, but get config from env vars that Supabase client uses
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      // 使用 gameLabService 生成游戏代码（流式响应）
+      let fullContent = "";
       
-      if (!supabaseUrl || !supabaseKey) {
-        throw new Error("Supabase 配置错误，请检查环境变量设置");
-      }
-
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:127',message:'Before generate-creation fetch',data:{url:`${supabaseUrl}/functions/v1/generate-creation`,hasAuth:!!supabaseKey},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-      // #endregion
-
-      const codeResponse = await fetch(
-        `${supabaseUrl}/functions/v1/generate-creation`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${supabaseKey}`,
+      try {
+        fullContent = await gameLabService.generateGame(
+          {
+            fusionResult: concept,
+            prompt: prompt, // gameLabService 会自动构建完整的 prompt
           },
-          body: JSON.stringify({ 
-            prompt: `${prompt}\n\nGame concept: ${concept.name} - ${concept.description}` 
-          }),
-        }
-      );
-
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:140',message:'After generate-creation fetch',data:{ok:codeResponse.ok,status:codeResponse.status,statusText:codeResponse.statusText,hasBody:!!codeResponse.body,contentType:codeResponse.headers.get('content-type')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
-
-      if (!codeResponse.ok) {
-        const errorText = await codeResponse.text();
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:145',message:'generate-creation fetch failed',data:{status:codeResponse.status,errorText},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-        // #endregion
+          (chunk) => {
+            // 实时更新进度（可选）
+          }
+        );
+      } catch (error: any) {
+        ErrorHandler.logError(error, 'GameLab.generateGame');
+        let errorMsg = ErrorHandler.getUserMessage(error);
         
-        let errorMsg = "游戏代码生成失败";
-        if (codeResponse.status === 429) {
+        // 针对特定错误提供更友好的提示
+        if (error?.status === 429 || error?.message?.includes("429") || error?.code === 'RATE_LIMIT') {
           errorMsg = "请求过于频繁，请稍等片刻后重试";
-        } else if (codeResponse.status === 402) {
+        } else if (error?.status === 402 || error?.message?.includes("402") || error?.code === 'QUOTA_EXCEEDED') {
           errorMsg = "API 使用额度已用完，请稍后重试";
-        } else if (codeResponse.status === 400) {
+        } else if (error?.status === 400 || error?.message?.includes("400") || error?.code === 'BAD_REQUEST') {
           errorMsg = "请求参数错误，请重试";
-        } else if (codeResponse.status === 500) {
+        } else if (error?.status === 500 || error?.message?.includes("500") || error?.code === 'SERVER_ERROR') {
           errorMsg = "服务器错误，请稍后重试";
         }
         
         throw new Error(errorMsg);
-      }
-
-      const reader = codeResponse.body?.getReader();
-      if (!reader) throw new Error("服务器未返回数据，请重试");
-
-      const decoder = new TextDecoder();
-      let fullContent = "";
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-
-        let newlineIndex: number;
-        while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
-          let line = buffer.slice(0, newlineIndex);
-          buffer = buffer.slice(newlineIndex + 1);
-
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (line.startsWith(":") || line.trim() === "") continue;
-          if (!line.startsWith("data: ")) continue;
-
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") break;
-
-          try {
-            const parsed = JSON.parse(jsonStr);
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:172',message:'Parsing SSE chunk',data:{hasChoices:!!parsed.choices,choicesLength:parsed.choices?.length,hasDelta:!!parsed.choices?.[0]?.delta,hasContent:!!parsed.choices?.[0]?.delta?.content,parsedKeys:Object.keys(parsed)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-            // #endregion
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) fullContent += content;
-          } catch (parseError) {
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:179',message:'SSE parse error',data:{error:parseError instanceof Error?parseError.message:String(parseError),jsonStr:jsonStr.substring(0,200)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-            // #endregion
-            buffer = line + "\n" + buffer;
-            break;
-          }
-        }
       }
 
       // Extract HTML with multiple fallback strategies
@@ -314,12 +238,9 @@ Use a fun, colorful visual style.`;
       fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:185',message:'Fusion success',data:{hasCode:!!htmlCode,codeLength:htmlCode.length,hasConcept:!!concept},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'ALL'})}).catch(()=>{});
       // #endregion
 
-      toast.success("融合游戏生成成功！");
+      toast.success(t('gameLab.success'));
     } catch (error) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:187',message:'Fusion error caught',data:{error:error instanceof Error?error.message:String(error),errorStack:error instanceof Error?error.stack:undefined},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-      // #endregion
-      console.error("Fusion error:", error);
+      ErrorHandler.logError(error, 'GameLab.handleFusion');
       
       // 详细的错误分类和友好提示
       let errorMessage = "融合失败，请重试";
@@ -396,23 +317,17 @@ Use a fun, colorful visual style.`;
 
     if (user) {
       try {
-        const { data, error } = await supabase
-          .from('creations')
-          .insert({
-            user_id: user.id,
-            title,
-            prompt,
-            html_code: generatedGame.code,
-            status: 'draft',
-            is_public: false,
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-        navigate(`/studio/${data.id}`);
+        const creation = await creationService.createCreation({
+          title,
+          prompt,
+          html_code: generatedGame.code,
+          is_public: false,
+        });
+        navigate(`/studio/${creation.id}`);
       } catch (error) {
-        console.error('Failed to save:', error);
+        ErrorHandler.logError(error, 'GameLab.handlePlayGame');
+        toast.error(ErrorHandler.getUserMessage(error));
+        // 保存到 sessionStorage 作为后备方案
         sessionStorage.setItem('pending_creation', JSON.stringify({
           code: generatedGame.code,
           prompt,
@@ -465,38 +380,38 @@ Use a fun, colorful visual style.`;
               className="gap-2 mb-6"
             >
               <ArrowLeft className="w-4 h-4" />
-              返回首页
+              {t('gameLab.backToHome')}
             </Button>
             
             <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-full px-4 py-1.5 mb-4">
               <FlaskConical className="w-4 h-4 text-purple-500" />
-              <span className="text-sm font-medium text-purple-600">实验性功能</span>
+              <span className="text-sm font-medium text-purple-600">{t('gameLab.experimental')}</span>
             </div>
             
             <h1 className="font-display text-3xl sm:text-4xl font-bold mb-4">
-              <span className="text-gradient-primary">游戏实验室</span>
+              <span className="text-gradient-primary">{t('gameLab.title')}</span>
             </h1>
             <p className="text-muted-foreground max-w-lg mx-auto">
-              选择 2-3 个游戏类型，让 AI 创造出前所未有的融合游戏。
+              {t('gameLab.description')}
               <br />
-              <span className="text-foreground font-medium">结果可能很奇怪，但绝对有趣！</span>
+              <span className="text-foreground font-medium">{t('gameLab.descriptionHint')}</span>
             </p>
           </div>
 
           {/* Selected Games */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-display font-semibold">已选择 ({selectedGames.length}/3)</h2>
+              <h2 className="font-display font-semibold">{t('gameLab.selected')} ({selectedGames.length}/3)</h2>
               <Button variant="outline" size="sm" onClick={randomSelect} className="gap-2">
                 <Shuffle className="w-4 h-4" />
-                随机选择
+                {t('gameLab.randomSelect')}
               </Button>
             </div>
             
             <div className="flex flex-wrap gap-3 min-h-[60px] p-4 rounded-xl border-2 border-dashed border-muted-foreground/20 bg-muted/30">
               {selectedGames.length === 0 ? (
                 <p className="text-muted-foreground text-sm w-full text-center py-2">
-                  点击下方游戏类型进行选择...
+                  {t('gameLab.clickToSelect')}
                 </p>
               ) : (
                 <>
@@ -524,7 +439,7 @@ Use a fun, colorful visual style.`;
 
           {/* Game Types Grid */}
           <div className="mb-8">
-            <h2 className="font-display font-semibold mb-4">游戏类型</h2>
+            <h2 className="font-display font-semibold mb-4">{t('gameLab.gameTypes')}</h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {gameTypes.map((game) => {
                 const isSelected = selectedGames.find(g => g.id === game.id);
@@ -559,12 +474,12 @@ Use a fun, colorful visual style.`;
               {isGenerating ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  融合中...
+                  {t('gameLab.fusing')}
                 </>
               ) : (
                 <>
                   <FlaskConical className="w-5 h-5" />
-                  开始融合！
+                  {t('gameLab.fuseGames')}
                 </>
               )}
             </Button>
@@ -598,7 +513,7 @@ Use a fun, colorful visual style.`;
                 {/* Step text */}
                 <div className="text-center mb-4">
                   <p className="font-display font-semibold text-foreground animate-fade-in" key={loadingStep}>
-                    {loadingSteps[loadingStep]?.text || "生成中..."}
+                    {loadingSteps[loadingStep]?.text || t('gameLab.generating')}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
                     {selectedGames.map(g => g.name).join(" × ")} = ???
@@ -619,7 +534,7 @@ Use a fun, colorful visual style.`;
                 
                 {/* Progress percentage */}
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>生成中</span>
+                  <span>{t('gameLab.generating')}</span>
                   <span className="font-mono">{progress}%</span>
                 </div>
 
@@ -668,33 +583,33 @@ Use a fun, colorful visual style.`;
                     <div className="text-3xl font-bold text-primary">
                       {generatedGame.scores.overall}
                     </div>
-                    <div className="text-xs text-muted-foreground">综合评分</div>
+                    <div className="text-xs text-muted-foreground">{t('gameLab.overallScore')}</div>
                   </div>
                 </div>
               </div>
 
               <div className="p-6 space-y-4">
-                <h4 className="font-semibold mb-4">AI 评分</h4>
+                <h4 className="font-semibold mb-4">{t('gameLab.aiScore')}</h4>
                 <ScoreBar 
-                  label="创意指数" 
+                  label={t('gameLab.creativity')} 
                   value={generatedGame.scores.creativity} 
                   icon={Brain}
                   color="bg-purple-500"
                 />
                 <ScoreBar 
-                  label="可玩性" 
+                  label={t('gameLab.playability')} 
                   value={generatedGame.scores.playability} 
                   icon={Target}
                   color="bg-green-500"
                 />
                 <ScoreBar 
-                  label="怪异程度" 
+                  label={t('gameLab.weirdness')} 
                   value={generatedGame.scores.weirdness} 
                   icon={Laugh}
                   color="bg-orange-500"
                 />
                 <ScoreBar 
-                  label="成瘾性" 
+                  label={t('gameLab.addiction')} 
                   value={generatedGame.scores.addiction} 
                   icon={Gamepad2}
                   color="bg-blue-500"
@@ -709,18 +624,18 @@ Use a fun, colorful visual style.`;
                 <div className="flex gap-3 mt-6">
                   <Button onClick={handlePlayGame} className="flex-1 gap-2">
                     <Gamepad2 className="w-4 h-4" />
-                    进入游戏
+                    {t('gameLab.playGame')}
                   </Button>
                   <Button variant="outline" onClick={handleRegenerate} className="gap-2" disabled={isGenerating}>
                     <Shuffle className="w-4 h-4" />
-                    重新生成
+                    {t('gameLab.regenerate')}
                   </Button>
                   <Button variant="outline" onClick={() => {
                     setGeneratedGame(null);
                     setSelectedGames([]);
                   }} className="gap-2">
                     <X className="w-4 h-4" />
-                    重新选择
+                    {t('common.back')}
                   </Button>
                 </div>
               </div>
@@ -729,7 +644,7 @@ Use a fun, colorful visual style.`;
 
           {/* Examples */}
           <div className="mt-16">
-            <h2 className="font-display font-semibold text-center mb-6">奇怪组合示例</h2>
+            <h2 className="font-display font-semibold text-center mb-6">{t('gameLab.examples')}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
                 { games: ["🐍", "🧱"], name: "俄罗斯贪吃蛇", desc: "蛇吃掉的食物会变成俄罗斯方块落下" },

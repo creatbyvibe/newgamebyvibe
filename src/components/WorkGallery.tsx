@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
 import { Play, Heart, User, TrendingUp } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { creationService } from "@/services/creationService";
+import { userService } from "@/services/userService";
+import { ErrorHandler } from "@/lib/errorHandler";
 
 interface Creation {
   id: string;
@@ -32,6 +35,7 @@ const gradients = [
 const WorkGallery = ({ showPublicOnly = true }: WorkGalleryProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [works, setWorks] = useState<Creation[]>([]);
   const [loading, setLoading] = useState(true);
   const [userLikes, setUserLikes] = useState<Set<string>>(new Set());
@@ -45,17 +49,11 @@ const WorkGallery = ({ showPublicOnly = true }: WorkGalleryProps) => {
 
   const fetchWorks = async () => {
     try {
-      const { data, error } = await supabase
-        .from("creations")
-        .select("id, title, prompt, html_code, plays, likes, is_public, user_id")
-        .eq("is_public", true)
-        .order("likes", { ascending: false })
-        .limit(6);
-
-      if (error) throw error;
-      setWorks((data as Creation[]) || []);
+      const data = await creationService.getPublicCreations(6);
+      setWorks(data as Creation[]);
     } catch (error) {
-      console.error("Error fetching works:", error);
+      ErrorHandler.logError(error, 'WorkGallery.fetchWorks');
+      toast.error(ErrorHandler.getUserMessage(error));
     } finally {
       setLoading(false);
     }
@@ -64,55 +62,43 @@ const WorkGallery = ({ showPublicOnly = true }: WorkGalleryProps) => {
   const fetchUserLikes = async () => {
     if (!user) return;
     try {
-      const { data } = await supabase
-        .from("creation_likes")
-        .select("creation_id")
-        .eq("user_id", user.id);
-
-      if (data) {
-        setUserLikes(new Set(data.map((like) => like.creation_id)));
-      }
+      const likes = await userService.getUserLikes(user.id);
+      setUserLikes(new Set(likes));
     } catch (error) {
-      console.error("Error fetching likes:", error);
+      ErrorHandler.logError(error, 'WorkGallery.fetchUserLikes');
     }
   };
 
   const handleLike = async (e: React.MouseEvent, creationId: string) => {
     e.stopPropagation();
     if (!user) {
-      toast.error("Please sign in to like");
+      toast.error("请先登录");
       return;
     }
 
     try {
-      if (userLikes.has(creationId)) {
-        await supabase
-          .from("creation_likes")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("creation_id", creationId);
-
-        setUserLikes((prev) => {
-          const next = new Set(prev);
+      const isLiked = await userService.toggleLike(user.id, creationId);
+      
+      setUserLikes((prev) => {
+        const next = new Set(prev);
+        if (isLiked) {
+          next.add(creationId);
+        } else {
           next.delete(creationId);
-          return next;
-        });
-        setWorks((prev) =>
-          prev.map((w) => (w.id === creationId ? { ...w, likes: w.likes - 1 } : w))
-        );
-      } else {
-        await supabase.from("creation_likes").insert({
-          user_id: user.id,
-          creation_id: creationId,
-        });
-
-        setUserLikes((prev) => new Set(prev).add(creationId));
-        setWorks((prev) =>
-          prev.map((w) => (w.id === creationId ? { ...w, likes: w.likes + 1 } : w))
-        );
-      }
+        }
+        return next;
+      });
+      
+      setWorks((prev) =>
+        prev.map((w) =>
+          w.id === creationId
+            ? { ...w, likes: isLiked ? w.likes + 1 : Math.max(0, w.likes - 1) }
+            : w
+        )
+      );
     } catch (error) {
-      console.error("Error toggling like:", error);
+      ErrorHandler.logError(error, 'WorkGallery.handleLike');
+      toast.error(ErrorHandler.getUserMessage(error));
     }
   };
 
@@ -174,6 +160,7 @@ const WorkGallery = ({ showPublicOnly = true }: WorkGalleryProps) => {
                       className="w-full h-full border-0 pointer-events-none"
                       sandbox=""
                       title={work.title}
+                      loading="lazy"
                     />
                   </div>
 

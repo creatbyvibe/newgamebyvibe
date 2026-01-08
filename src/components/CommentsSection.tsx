@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Star, Send, Trash2, User, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { commentService } from "@/services/commentService";
+import { userService } from "@/services/userService";
+import { ErrorHandler } from "@/lib/errorHandler";
 
 interface Comment {
   id: string;
@@ -24,6 +26,7 @@ interface CommentsSectionProps {
 
 const CommentsSection = ({ creationId }: CommentsSectionProps) => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -37,30 +40,11 @@ const CommentsSection = ({ creationId }: CommentsSectionProps) => {
 
   const fetchComments = async () => {
     try {
-      const { data, error } = await supabase
-        .from("creation_comments")
-        .select("*")
-        .eq("creation_id", creationId)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      // Fetch profiles for each comment
-      const commentsWithProfiles = await Promise.all(
-        (data || []).map(async (comment) => {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("username, avatar_url")
-            .eq("id", comment.user_id)
-            .maybeSingle();
-          
-          return { ...comment, profile: profile || undefined };
-        })
-      );
-
-      setComments(commentsWithProfiles);
+      const data = await commentService.getCommentsByCreationId(creationId);
+      setComments(data);
     } catch (error) {
-      console.error("Error fetching comments:", error);
+      ErrorHandler.logError(error, 'CommentsSection.fetchComments');
+      toast.error(ErrorHandler.getUserMessage(error));
     } finally {
       setLoading(false);
     }
@@ -68,63 +52,54 @@ const CommentsSection = ({ creationId }: CommentsSectionProps) => {
 
   const handleSubmit = async () => {
     if (!user) {
-      toast.error("Please sign in to comment");
+      toast.error(t('errors.pleaseLogin'));
       return;
     }
 
     if (!newComment.trim()) {
-      toast.error("Please write a comment");
+      toast.error(t('creation.commentPlaceholder'));
       return;
     }
 
     setSubmitting(true);
     try {
-      const { data, error } = await supabase
-        .from("creation_comments")
-        .insert({
-          creation_id: creationId,
-          user_id: user.id,
-          content: newComment.trim(),
-          rating: newRating > 0 ? newRating : null,
-        })
-        .select()
-        .single();
+      const newCommentData = await commentService.createComment({
+        creation_id: creationId,
+        content: newComment.trim(),
+        rating: newRating > 0 ? newRating : undefined,
+      });
 
-      if (error) throw error;
+      // 获取用户资料
+      const profile = await userService.getProfile(user.id);
 
-      // Get user profile
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("username, avatar_url")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      setComments([{ ...data, profile: profile || undefined }, ...comments]);
+      setComments([
+        { ...newCommentData, profile: profile || undefined } as Comment,
+        ...comments,
+      ]);
       setNewComment("");
       setNewRating(0);
-      toast.success("Comment posted!");
+      toast.success(t('creation.commentPosted'));
     } catch (error) {
-      console.error("Error posting comment:", error);
-      toast.error("Failed to post comment");
+      ErrorHandler.logError(error, 'CommentsSection.handleSubmit');
+      toast.error(ErrorHandler.getUserMessage(error));
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDelete = async (commentId: string) => {
+    if (!user) {
+      toast.error("请先登录");
+      return;
+    }
+
     try {
-      const { error } = await supabase
-        .from("creation_comments")
-        .delete()
-        .eq("id", commentId);
-
-      if (error) throw error;
-
+      await commentService.deleteComment(commentId);
       setComments(comments.filter((c) => c.id !== commentId));
-      toast.success("Comment deleted");
+      toast.success("评论已删除");
     } catch (error) {
-      console.error("Error deleting comment:", error);
-      toast.error("Failed to delete comment");
+      ErrorHandler.logError(error, 'CommentsSection.handleDelete');
+      toast.error(ErrorHandler.getUserMessage(error));
     }
   };
 
@@ -160,7 +135,7 @@ const CommentsSection = ({ creationId }: CommentsSectionProps) => {
                 ))}
               </div>
               <div className="text-sm text-muted-foreground mt-1">
-                {comments.filter(c => c.rating).length} ratings
+                {comments.filter(c => c.rating).length} {t('creation.ratings')}
               </div>
             </div>
             
@@ -188,12 +163,12 @@ const CommentsSection = ({ creationId }: CommentsSectionProps) => {
       {/* Write Comment */}
       <div className="bg-muted/30 rounded-2xl p-6 border border-border">
         <h3 className="font-display font-semibold text-foreground mb-4">
-          Leave a review
+          {t('creation.addComment')}
         </h3>
         
         {/* Rating Selection */}
         <div className="flex items-center gap-2 mb-4">
-          <span className="text-sm text-muted-foreground">Your rating:</span>
+          <span className="text-sm text-muted-foreground">{t('creation.yourRating')}:</span>
           <div className="flex items-center gap-1">
             {[1, 2, 3, 4, 5].map((star) => (
               <button
@@ -218,7 +193,7 @@ const CommentsSection = ({ creationId }: CommentsSectionProps) => {
               onClick={() => setNewRating(0)}
               className="text-xs text-muted-foreground hover:text-foreground"
             >
-              Clear
+              {t('common.cancel')}
             </button>
           )}
         </div>
@@ -226,7 +201,7 @@ const CommentsSection = ({ creationId }: CommentsSectionProps) => {
         <Textarea
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
-          placeholder="Share your thoughts about this creation..."
+          placeholder={t('creation.commentPlaceholder')}
           className="min-h-[100px] resize-none mb-4"
         />
         
@@ -240,7 +215,7 @@ const CommentsSection = ({ creationId }: CommentsSectionProps) => {
           ) : (
             <Send className="w-4 h-4" />
           )}
-          Post Review
+          {t('creation.postComment')}
         </Button>
       </div>
 

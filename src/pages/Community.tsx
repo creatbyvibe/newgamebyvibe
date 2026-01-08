@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
 import { Play, Heart, User, TrendingUp, Clock, Flame, Search } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { creationService } from "@/services/creationService";
+import { userService } from "@/services/userService";
+import { ErrorHandler } from "@/lib/errorHandler";
 
 interface Creation {
   id: string;
@@ -34,11 +37,18 @@ const gradients = [
 const Community = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [works, setWorks] = useState<Creation[]>([]);
   const [loading, setLoading] = useState(true);
   const [userLikes, setUserLikes] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<SortType>("trending");
   const [searchQuery, setSearchQuery] = useState("");
+
+  const sortOptions: { key: SortType; label: string; icon: React.ReactNode }[] = [
+    { key: "trending", label: t('community.trending'), icon: <Flame className="w-4 h-4" /> },
+    { key: "newest", label: t('community.newest'), icon: <Clock className="w-4 h-4" /> },
+    { key: "popular", label: t('community.popular'), icon: <TrendingUp className="w-4 h-4" /> },
+  ];
 
   useEffect(() => {
     fetchWorks();
@@ -49,30 +59,34 @@ const Community = () => {
 
   const fetchWorks = async () => {
     try {
-      let query = supabase
-        .from("creations")
-        .select("id, title, prompt, html_code, plays, likes, is_public, user_id, created_at")
-        .eq("is_public", true);
-
-      switch (sortBy) {
-        case "newest":
-          query = query.order("created_at", { ascending: false });
-          break;
-        case "popular":
-          query = query.order("plays", { ascending: false });
-          break;
-        case "trending":
-        default:
-          query = query.order("likes", { ascending: false });
-          break;
+      let data: Creation[];
+      
+      if (searchQuery.trim()) {
+        data = await creationService.searchCreations(searchQuery.trim(), 30);
+      } else {
+        // 获取公开创作，然后按排序类型排序
+        const allData = await creationService.getAllPublicCreations();
+        
+        switch (sortBy) {
+          case "newest":
+            data = allData.sort((a, b) => 
+              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            ).slice(0, 30) as Creation[];
+            break;
+          case "popular":
+            data = allData.sort((a, b) => (b.plays || 0) - (a.plays || 0)).slice(0, 30) as Creation[];
+            break;
+          case "trending":
+          default:
+            data = allData.sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, 30) as Creation[];
+            break;
+        }
       }
-
-      const { data, error } = await query.limit(30);
-
-      if (error) throw error;
-      setWorks((data as Creation[]) || []);
+      
+      setWorks(data);
     } catch (error) {
-      console.error("Error fetching works:", error);
+      ErrorHandler.logError(error, 'Community.fetchWorks');
+      toast.error(ErrorHandler.getUserMessage(error));
     } finally {
       setLoading(false);
     }
@@ -81,16 +95,10 @@ const Community = () => {
   const fetchUserLikes = async () => {
     if (!user) return;
     try {
-      const { data } = await supabase
-        .from("creation_likes")
-        .select("creation_id")
-        .eq("user_id", user.id);
-
-      if (data) {
-        setUserLikes(new Set(data.map((like) => like.creation_id)));
-      }
+      const likes = await userService.getUserLikes(user.id);
+      setUserLikes(new Set(likes));
     } catch (error) {
-      console.error("Error fetching likes:", error);
+      ErrorHandler.logError(error, 'Community.fetchUserLikes');
     }
   };
 
@@ -102,34 +110,28 @@ const Community = () => {
     }
 
     try {
-      if (userLikes.has(creationId)) {
-        await supabase
-          .from("creation_likes")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("creation_id", creationId);
-
-        setUserLikes((prev) => {
-          const next = new Set(prev);
+      const isLiked = await userService.toggleLike(user.id, creationId);
+      
+      setUserLikes((prev) => {
+        const next = new Set(prev);
+        if (isLiked) {
+          next.add(creationId);
+        } else {
           next.delete(creationId);
-          return next;
-        });
-        setWorks((prev) =>
-          prev.map((w) => (w.id === creationId ? { ...w, likes: w.likes - 1 } : w))
-        );
-      } else {
-        await supabase.from("creation_likes").insert({
-          user_id: user.id,
-          creation_id: creationId,
-        });
-
-        setUserLikes((prev) => new Set(prev).add(creationId));
-        setWorks((prev) =>
-          prev.map((w) => (w.id === creationId ? { ...w, likes: w.likes + 1 } : w))
-        );
-      }
+        }
+        return next;
+      });
+      
+      setWorks((prev) =>
+        prev.map((w) =>
+          w.id === creationId
+            ? { ...w, likes: isLiked ? w.likes + 1 : Math.max(0, w.likes - 1) }
+            : w
+        )
+      );
     } catch (error) {
-      console.error("Error toggling like:", error);
+      ErrorHandler.logError(error, 'Community.handleLike');
+      toast.error(ErrorHandler.getUserMessage(error));
     }
   };
 
@@ -142,12 +144,6 @@ const Community = () => {
     work.prompt.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const sortOptions: { key: SortType; label: string; icon: React.ReactNode }[] = [
-    { key: "trending", label: "热门", icon: <Flame className="w-4 h-4" /> },
-    { key: "newest", label: "最新", icon: <Clock className="w-4 h-4" /> },
-    { key: "popular", label: "最多游玩", icon: <TrendingUp className="w-4 h-4" /> },
-  ];
-
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -156,9 +152,9 @@ const Community = () => {
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground">社区作品</h1>
+            <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground">{t('community.title')}</h1>
             <p className="text-muted-foreground mt-2">
-              发现和体验社区创作者的精彩作品
+              {t('community.description')}
             </p>
           </div>
 
@@ -186,7 +182,7 @@ const Community = () => {
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="搜索作品..."
+                placeholder={t('community.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -208,7 +204,7 @@ const Community = () => {
           ) : filteredWorks.length === 0 ? (
             <div className="text-center py-16 bg-muted/30 rounded-2xl border border-border">
               <p className="text-muted-foreground mb-4">
-                {searchQuery ? "没有找到匹配的作品" : "还没有公开的作品"}
+                {searchQuery ? t('community.noResults') : t('community.noPublicCreations')}
               </p>
               <Button onClick={() => navigate("/")} size="sm">
                 创建第一个作品
@@ -272,7 +268,7 @@ const Community = () => {
                       </h4>
                       <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                         <User className="w-3 h-3" />
-                        {work.user_id ? "社区创作者" : "匿名用户"}
+                        {work.user_id ? t('community.creator') : t('community.anonymous')}
                       </p>
                     </div>
                   </div>

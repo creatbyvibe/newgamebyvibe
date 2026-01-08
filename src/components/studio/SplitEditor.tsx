@@ -144,18 +144,14 @@ const SplitEditor = ({ code, prompt, onCodeChange, creationId }: SplitEditorProp
     setChatHistory(prev => [...prev, { role: 'user', content: promptToUse }]);
     
     try {
-      const response = await supabase.functions.invoke('ai-code-assist', {
-        body: {
-          prompt: promptToUse,
-          currentCode: code,
-          context: prompt,
-        },
+      const response = await apiClient.invokeFunction<{ code: string; explanation?: string }>('ai-code-assist', {
+        prompt: promptToUse,
+        currentCode: code,
+        context: prompt,
       });
 
-      if (response.error) throw response.error;
-
-      const newCode = response.data?.code || code;
-      const explanation = response.data?.explanation || '✅ 代码已更新成功';
+      const newCode = response?.code || code;
+      const explanation = response?.explanation || '✅ 代码已更新成功';
       
       onCodeChange(newCode);
       setChatHistory(prev => [...prev, { 
@@ -171,10 +167,11 @@ const SplitEditor = ({ code, prompt, onCodeChange, creationId }: SplitEditorProp
       });
     } catch (error) {
       console.error('AI modification failed:', error);
-      setChatHistory(prev => [...prev, { role: 'ai', content: '❌ 抱歉，遇到了一些问题。请重试。' }]);
+      ErrorHandler.logError(error, 'SplitEditor.handleAIGenerate');
+      setChatHistory(prev => [...prev, { role: 'ai', content: `❌ ${ErrorHandler.getUserMessage(error) || '抱歉，遇到了一些问题。请重试。'}` }]);
       toast({
         title: '出错了',
-        description: '修改失败，请重试',
+        description: ErrorHandler.getUserMessage(error) || '修改失败，请重试',
         variant: 'destructive',
       });
     } finally {

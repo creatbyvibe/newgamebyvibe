@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Sparkles, Send, Loader2, X, Wand2 } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/apiClient";
+import { ErrorHandler } from "@/lib/errorHandler";
 
 interface AICodeAssistantProps {
   currentCode: string;
@@ -23,29 +24,22 @@ const AICodeAssistant = ({ currentCode, onCodeUpdate }: AICodeAssistantProps) =>
 
     setLoading(true);
     try {
-      const response = await supabase.functions.invoke("ai-code-assist", {
-        body: { 
-          prompt: prompt.trim(),
-          currentCode 
-        },
+      const response = await apiClient.invokeFunction<{ code: string }>("ai-code-assist", {
+        prompt: prompt.trim(),
+        currentCode,
       });
 
-      if (response.error) {
-        throw new Error(response.error.message);
-      }
-
-      const newCode = response.data?.code;
-      if (newCode) {
-        onCodeUpdate(newCode);
+      if (response?.code) {
+        onCodeUpdate(response.code);
         setPrompt("");
         setIsOpen(false);
-        toast.success("Code updated!");
+        toast.success("代码已更新！");
       } else {
-        throw new Error("No code returned");
+        throw new Error("未返回代码");
       }
     } catch (error) {
-      console.error("AI assist error:", error);
-      toast.error("Failed to update code. Please try again.");
+      ErrorHandler.logError(error, 'AICodeAssistant.handleSubmit');
+      toast.error(ErrorHandler.getUserMessage(error) || "更新代码失败，请重试");
     } finally {
       setLoading(false);
     }

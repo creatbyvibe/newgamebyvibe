@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Loader2, Sparkles } from "lucide-react";
 
@@ -18,6 +19,7 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
+  const { t } = useTranslation();
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -33,17 +35,17 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
     
     // 验证输入
     if (!email.trim() || !password.trim()) {
-      toast.error("请填写所有字段");
+      toast.error(t('auth.fillAllFields') || "请填写所有字段");
       return;
     }
 
     if (!validateEmail(email)) {
-      toast.error("请输入有效的邮箱地址");
+      toast.error(t('auth.invalidEmail'));
       return;
     }
 
     if (!isLogin && !validatePassword(password)) {
-      toast.error("密码至少需要 6 个字符");
+      toast.error(t('auth.passwordTooShort'));
       return;
     }
     
@@ -89,17 +91,17 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
             <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-primary-foreground" />
             </div>
-            {isLogin ? "欢迎回来" : "加入 byvibe.ai"}
+            {isLogin ? t('auth.welcomeBack') : t('auth.joinByvibe')}
           </DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="space-y-2">
-            <Label htmlFor="email">邮箱</Label>
+            <Label htmlFor="email">{t('auth.email')}</Label>
             <Input
               id="email"
               type="email"
-              placeholder="your@email.com"
+              placeholder={t('auth.emailPlaceholder')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
@@ -107,36 +109,36 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="password">密码</Label>
+            <Label htmlFor="password">{t('auth.password')}</Label>
             <Input
               id="password"
               type="password"
-              placeholder="至少 6 个字符"
+              placeholder={t('auth.passwordPlaceholder')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
             />
             {!isLogin && (
               <p className="text-xs text-muted-foreground">
-                密码至少需要 6 个字符
+                {t('auth.passwordTooShort')}
               </p>
             )}
           </div>
           
           <Button type="submit" className="w-full gap-2" disabled={loading}>
             {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-            {isLogin ? "登录" : "创建账户"}
+            {isLogin ? t('auth.login') : t('auth.createAccount')}
           </Button>
         </form>
         
         <div className="text-center text-sm text-muted-foreground mt-4">
-          {isLogin ? "还没有账户？" : "已有账户？"}
+          {isLogin ? t('auth.noAccount') : t('auth.hasAccount')}
           <button
             type="button"
             onClick={() => setIsLogin(!isLogin)}
             className="text-primary hover:underline ml-1 font-medium"
           >
-            {isLogin ? "立即注册" : "立即登录"}
+            {isLogin ? t('auth.signupNow') : t('auth.loginNow')}
           </button>
         </div>
       </DialogContent>

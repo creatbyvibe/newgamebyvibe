@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, Wand2, Lightbulb, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { apiClient } from "@/lib/apiClient";
+import { ErrorHandler } from "@/lib/errorHandler";
 
 interface DesignAssistantProps {
   prompt: string;
@@ -34,21 +35,17 @@ const DesignAssistant = ({ prompt, onUseOptimized }: DesignAssistantProps) => {
     setAnalysis(null);
 
     try {
-      const response = await supabase.functions.invoke("design-assistant", {
-        body: { prompt: prompt.trim() },
+      const response = await apiClient.invokeFunction<{ analysis: AnalysisResult }>("design-assistant", {
+        prompt: prompt.trim(),
       });
 
-      if (response.error) {
-        throw new Error(response.error.message);
-      }
-
-      if (response.data?.analysis) {
-        setAnalysis(response.data.analysis);
+      if (response?.analysis) {
+        setAnalysis(response.analysis);
         setIsExpanded(true);
       }
     } catch (error) {
-      console.error("Design assistant error:", error);
-      toast.error("分析失败，请重试");
+      ErrorHandler.logError(error, 'DesignAssistant.handleAnalyze');
+      toast.error(ErrorHandler.getUserMessage(error) || "分析失败，请重试");
     } finally {
       setIsAnalyzing(false);
     }

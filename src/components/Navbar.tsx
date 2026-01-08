@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Menu, X, User, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "react-i18next";
 import AuthModal from "./AuthModal";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +15,7 @@ import {
 
 const Navbar = () => {
   const { user, signOut, loading } = useAuth();
+  const { t } = useTranslation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -56,24 +59,25 @@ const Navbar = () => {
                 href="/inspiration"
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
-                灵感库
+                {t('navbar.inspiration')}
               </a>
               <a
                 href="/game-lab"
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
-                游戏实验室
+                {t('navbar.gameLab')}
               </a>
               <a
                 href="/community"
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
-                社区
+                {t('navbar.community')}
               </a>
             </div>
 
             {/* CTA / User */}
             <div className="hidden md:flex items-center gap-3">
+              <LanguageSwitcher />
               {loading ? null : user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -84,23 +88,23 @@ const Navbar = () => {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem asChild>
-                      <a href="/my-creations">我的创作</a>
+                      <a href="/my-creations">{t('navbar.myCreations')}</a>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                       <LogOut className="w-4 h-4 mr-2" />
-                      退出
+                      {t('navbar.logout')}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
                 <>
                   <Button variant="ghost" size="sm" onClick={() => setShowAuthModal(true)}>
-                    登录
+                    {t('navbar.login')}
                   </Button>
                   <Button size="sm" className="gap-2" onClick={() => setShowAuthModal(true)}>
                     <Sparkles className="w-4 h-4" />
-                    开始创作
+                    {t('navbar.signup')}
                   </Button>
                 </>
               )}
@@ -119,23 +123,26 @@ const Navbar = () => {
           {isMobileMenuOpen && (
             <div className="md:hidden py-4 border-t border-border animate-fade-in bg-background">
               <div className="flex flex-col gap-4">
+                <div className="px-2 pb-2">
+                  <LanguageSwitcher />
+                </div>
                 <a
                   href="/inspiration"
                   className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2"
                 >
-                  灵感库
+                  {t('navbar.inspiration')}
                 </a>
                 <a
                   href="/game-lab"
                   className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2"
                 >
-                  游戏实验室
+                  {t('navbar.gameLab')}
                 </a>
                 <a
                   href="/community"
                   className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2"
                 >
-                  社区
+                  {t('navbar.community')}
                 </a>
                 {user ? (
                   <>
@@ -143,17 +150,17 @@ const Navbar = () => {
                       href="/my-creations"
                       className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2"
                     >
-                      我的创作
+                      {t('navbar.myCreations')}
                     </a>
                     <Button variant="outline" size="sm" onClick={handleSignOut} className="gap-2">
                       <LogOut className="w-4 h-4" />
-                      退出
+                      {t('navbar.logout')}
                     </Button>
                   </>
                 ) : (
                   <Button size="sm" className="gap-2 w-full mt-2" onClick={() => setShowAuthModal(true)}>
                     <Sparkles className="w-4 h-4" />
-                    开始创作
+                    {t('navbar.signup')}
                   </Button>
                 )}
               </div>

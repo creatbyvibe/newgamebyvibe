@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import StudioHeader from '@/components/studio/StudioHeader';
@@ -10,6 +9,8 @@ import SplitEditor from '@/components/studio/SplitEditor';
 import SavesManager from '@/components/studio/SavesManager';
 import VersionHistory from '@/components/studio/VersionHistory';
 import { Loader2 } from 'lucide-react';
+import { creationService } from '@/services/creationService';
+import { ErrorHandler } from '@/lib/errorHandler';
 
 interface Creation {
   id: string;
@@ -72,46 +73,52 @@ const StudioPage = () => {
         }
       } else if (id) {
         // Load from database
-        const { data, error } = await supabase
-          .from('creations')
-          .select('*')
-          .eq('id', id)
-          .maybeSingle();
-        
-        if (error || !data) {
-          toast({
-            title: 'Error',
-            description: 'Failed to load creation',
-            variant: 'destructive',
-          });
-          navigate('/');
-          return;
-        }
-        
-        // Check ownership for editing
-        if (data.user_id !== user?.id) {
-          // Can only view if public
-          if (!data.is_public) {
+        try {
+          const data = await creationService.getCreationById(id);
+          
+          if (!data) {
             toast({
-              title: 'Access Denied',
-              description: 'You do not have permission to view this creation',
+              title: 'Error',
+              description: 'Failed to load creation',
               variant: 'destructive',
             });
             navigate('/');
             return;
           }
+          
+          // Check ownership for editing
+          if (data.user_id !== user?.id) {
+            // Can only view if public
+            if (!data.is_public) {
+              toast({
+                title: 'Access Denied',
+                description: 'You do not have permission to view this creation',
+                variant: 'destructive',
+              });
+              navigate('/');
+              return;
+            }
           // Redirect to play-only view
           navigate(`/creation/${id}`);
           return;
         }
         
-        setCreation(data as Creation);
-        setCode(data.html_code);
-        setTitle(data.title);
-        setPrompt(data.prompt);
-        setIsPublic(data.is_public || false);
-        lastSavedCodeRef.current = data.html_code;
-        setLoading(false);
+          setCreation(data as Creation);
+          setCode(data.html_code);
+          setTitle(data.title);
+          setPrompt(data.prompt);
+          setIsPublic(data.is_public || false);
+          lastSavedCodeRef.current = data.html_code;
+          setLoading(false);
+        } catch (error) {
+          ErrorHandler.logError(error, 'StudioPage.loadData');
+          toast({
+            title: 'Error',
+            description: ErrorHandler.getUserMessage(error),
+            variant: 'destructive',
+          });
+          navigate('/');
+        }
       }
     };
     
@@ -127,33 +134,30 @@ const StudioPage = () => {
     
     try {
       const parsed = JSON.parse(pendingData);
-      const { data, error } = await supabase
-        .from('creations')
-        .insert({
-          user_id: user.id,
-          title: parsed.title || 'Untitled Creation',
-          prompt: parsed.prompt || '',
-          html_code: parsed.code || '',
-          status: 'draft',
-          is_public: false,
-        })
-        .select()
-        .single();
-      
-      if (error) throw error;
+      const creation = await creationService.createCreation({
+        title: parsed.title || 'Untitled Creation',
+        prompt: parsed.prompt || '',
+        html_code: parsed.code || '',
+        is_public: false,
+      });
       
       // Clear session storage and redirect to the new creation
       sessionStorage.removeItem('pending_creation');
       setIsNewCreation(false);
-      setCreation(data as Creation);
-      navigate(`/studio/${data.id}`, { replace: true });
+      setCreation(creation as Creation);
+      navigate(`/studio/${creation.id}`, { replace: true });
       
       toast({
         title: 'Draft Saved',
         description: 'Your creation has been saved as a draft',
       });
     } catch (error) {
-      console.error('Failed to save draft:', error);
+      ErrorHandler.logError(error, 'StudioPage.saveAsDraft');
+      toast({
+        title: 'Error',
+        description: ErrorHandler.getUserMessage(error),
+        variant: 'destructive',
+      });
     }
   };
 
@@ -164,20 +168,14 @@ const StudioPage = () => {
     setSaveStatus('saving');
     
     try {
-      const { error } = await supabase
-        .from('creations')
-        .update({
-          html_code: code,
-          auto_saved_at: new Date().toISOString(),
-        })
-        .eq('id', creation.id);
-      
-      if (error) throw error;
+      await creationService.updateCreation(creation.id, {
+        html_code: code,
+      });
       
       lastSavedCodeRef.current = code;
       setSaveStatus('saved');
     } catch (error) {
-      console.error('Auto-save failed:', error);
+      ErrorHandler.logError(error, 'StudioPage.performAutoSave');
       setSaveStatus('unsaved');
     }
   }, [creation?.id, user, code]);
@@ -221,29 +219,27 @@ const StudioPage = () => {
     setSaveStatus('saving');
     
     try {
-      // Save current version to history
-      await supabase.from('creation_versions').insert({
-        creation_id: creation.id,
-        version: creation.version,
-        html_code: lastSavedCodeRef.current,
-        change_note: 'Manual save',
-      });
+      // Save current version to history (使用 apiClient)
+      const { apiClient } = await import('@/lib/apiClient');
+      const { supabase } = await import('@/integrations/supabase/client');
+      
+      await apiClient.execute(() =>
+        supabase.from('creation_versions').insert({
+          creation_id: creation.id,
+          version: creation.version || 1,
+          html_code: lastSavedCodeRef.current,
+          change_note: 'Manual save',
+        })
+      );
       
       // Update creation with new version
-      const { error } = await supabase
-        .from('creations')
-        .update({
-          html_code: code,
-          title,
-          version: creation.version + 1,
-          auto_saved_at: new Date().toISOString(),
-        })
-        .eq('id', creation.id);
-      
-      if (error) throw error;
+      const updatedCreation = await creationService.updateCreation(creation.id, {
+        html_code: code,
+        title,
+      });
       
       lastSavedCodeRef.current = code;
-      setCreation(prev => prev ? { ...prev, version: prev.version + 1 } : null);
+      setCreation(prev => prev ? { ...prev, version: (prev.version || 1) + 1, ...updatedCreation } : null);
       setSaveStatus('saved');
       
       toast({
@@ -251,11 +247,11 @@ const StudioPage = () => {
         description: 'Your changes have been saved',
       });
     } catch (error) {
-      console.error('Save failed:', error);
+      ErrorHandler.logError(error, 'StudioPage.handleSave');
       setSaveStatus('unsaved');
       toast({
         title: 'Save Failed',
-        description: 'Failed to save your changes',
+        description: ErrorHandler.getUserMessage(error),
         variant: 'destructive',
       });
     }
@@ -267,17 +263,12 @@ const StudioPage = () => {
     
     try {
       const newStatus = !isPublic;
-      const { error } = await supabase
-        .from('creations')
-        .update({ 
-          is_public: newStatus,
-          status: newStatus ? 'published' : 'draft',
-        })
-        .eq('id', creation.id);
-      
-      if (error) throw error;
+      await creationService.updateCreation(creation.id, {
+        is_public: newStatus,
+      });
       
       setIsPublic(newStatus);
+      setCreation(prev => prev ? { ...prev, is_public: newStatus } : null);
       toast({
         title: newStatus ? 'Published' : 'Unpublished',
         description: newStatus 
@@ -285,10 +276,10 @@ const StudioPage = () => {
           : 'Your creation is now private',
       });
     } catch (error) {
-      console.error('Toggle public failed:', error);
+      ErrorHandler.logError(error, 'StudioPage.handleTogglePublic');
       toast({
         title: 'Error',
-        description: 'Failed to update visibility',
+        description: ErrorHandler.getUserMessage(error),
         variant: 'destructive',
       });
     }

@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, ArrowRight, Wand2, Code, Palette, Zap, Gamepad2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
 import AuthModal from "./AuthModal";
 import DesignAssistant from "./DesignAssistant";
+import { gameLabService } from "@/services/gameLabService";
+import { creationService } from "@/services/creationService";
+import { ErrorHandler } from "@/lib/errorHandler";
 
 // Game-focused suggestions to inspire creativity
 const gameSuggestions = [
@@ -111,62 +113,13 @@ const AICreator = ({ initialPrompt = "", showSuggestions = true }: AICreatorProp
     setCurrentPrompt(input.trim());
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-creation`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ prompt: input.trim() }),
+      // 使用 gameLabService 生成游戏代码（流式响应）
+      const fullContent = await gameLabService.generateGame(
+        { prompt: input.trim() },
+        (chunk) => {
+          // 实时更新进度（可选）
         }
       );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to generate");
-      }
-
-      if (!response.body) {
-        throw new Error("No response body");
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let fullContent = "";
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-
-        let newlineIndex: number;
-        while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
-          let line = buffer.slice(0, newlineIndex);
-          buffer = buffer.slice(newlineIndex + 1);
-
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (line.startsWith(":") || line.trim() === "") continue;
-          if (!line.startsWith("data: ")) continue;
-
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") break;
-
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) {
-              fullContent += content;
-            }
-          } catch {
-            buffer = line + "\n" + buffer;
-            break;
-          }
-        }
-      }
 
       // Extract HTML from the response
       let htmlCode = fullContent;
@@ -195,25 +148,17 @@ const AICreator = ({ initialPrompt = "", showSuggestions = true }: AICreatorProp
         if (user) {
           // Logged in: Create draft in database and navigate
           try {
-            const { data, error } = await supabase
-              .from('creations')
-              .insert({
-                user_id: user.id,
-                title: autoTitle,
-                prompt: input.trim(),
-                html_code: htmlCode,
-                status: 'draft',
-                is_public: false,
-              })
-              .select()
-              .single();
-
-            if (error) throw error;
+            const creation = await creationService.createCreation({
+              title: autoTitle,
+              prompt: input.trim(),
+              html_code: htmlCode,
+              is_public: false,
+            });
 
             toast.success("创作生成成功!");
-            navigate(`/studio/${data.id}`);
+            navigate(`/studio/${creation.id}`);
           } catch (error) {
-            console.error('Failed to save creation:', error);
+            ErrorHandler.logError(error, 'AICreator.handleCreate');
             // Fallback to session storage
             sessionStorage.setItem('pending_creation', JSON.stringify({
               code: htmlCode,
@@ -236,8 +181,9 @@ const AICreator = ({ initialPrompt = "", showSuggestions = true }: AICreatorProp
         throw new Error("Could not extract valid HTML");
       }
     } catch (error) {
-      console.error("Generation error:", error);
-      toast.error(error instanceof Error ? error.message : "生成失败");
+      ErrorHandler.logError(error, 'AICreator.handleCreate');
+      const errorMessage = ErrorHandler.getUserMessage(error);
+      toast.error(errorMessage || "生成失败");
     } finally {
       setIsGenerating(false);
     }

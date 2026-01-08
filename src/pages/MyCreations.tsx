@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "react-i18next";
 import Navbar from "@/components/Navbar";
 import { Play, Heart, Trash2, Globe, Lock, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { creationService } from "@/services/creationService";
+import { ErrorHandler } from "@/lib/errorHandler";
 
 interface Creation {
   id: string;
@@ -21,6 +23,7 @@ interface Creation {
 const MyCreations = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [creations, setCreations] = useState<Creation[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -37,51 +40,44 @@ const MyCreations = () => {
   }, [user]);
 
   const fetchCreations = async () => {
+    if (!user?.id) return;
+    
     try {
-      const { data, error } = await supabase
-        .from("creations")
-        .select("*")
-        .eq("user_id", user?.id)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setCreations(data || []);
+      const data = await creationService.getUserCreations(user.id);
+      setCreations(data as Creation[]);
     } catch (error) {
-      console.error("Error fetching creations:", error);
+      ErrorHandler.logError(error, 'MyCreations.fetchCreations');
+      toast.error(ErrorHandler.getUserMessage(error));
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("确定要删除这个作品吗？")) return;
+    if (!confirm(t('creations.deleteConfirm'))) return;
 
     try {
-      const { error } = await supabase.from("creations").delete().eq("id", id);
-      if (error) throw error;
+      await creationService.deleteCreation(id);
       setCreations((prev) => prev.filter((c) => c.id !== id));
-      toast.success("已删除");
+      toast.success(t('creations.deleted'));
     } catch (error) {
-      console.error("Error deleting:", error);
-      toast.error("删除失败");
+      ErrorHandler.logError(error, 'MyCreations.handleDelete');
+      toast.error(ErrorHandler.getUserMessage(error));
     }
   };
 
   const handleTogglePublic = async (creation: Creation) => {
     try {
-      const { error } = await supabase
-        .from("creations")
-        .update({ is_public: !creation.is_public })
-        .eq("id", creation.id);
-
-      if (error) throw error;
+      await creationService.updateCreation(creation.id, {
+        is_public: !creation.is_public,
+      });
       setCreations((prev) =>
         prev.map((c) => (c.id === creation.id ? { ...c, is_public: !c.is_public } : c))
       );
-      toast.success(creation.is_public ? "已设为私密" : "已公开");
+      toast.success(creation.is_public ? t('creations.makePrivate') : t('creations.makePublic'));
     } catch (error) {
-      console.error("Error updating:", error);
-      toast.error("更新失败");
+      ErrorHandler.logError(error, 'MyCreations.handleTogglePublic');
+      toast.error(ErrorHandler.getUserMessage(error));
     }
   };
 
@@ -116,8 +112,8 @@ const MyCreations = () => {
           {/* Creations Grid */}
           {creations.length === 0 ? (
             <div className="text-center py-16 bg-muted/30 rounded-2xl border border-border">
-              <p className="text-muted-foreground mb-4">你还没有创建任何作品</p>
-              <Button onClick={() => navigate("/")} size="sm">创建第一个作品</Button>
+              <p className="text-muted-foreground mb-4">{t('creations.noCreations')}</p>
+              <Button onClick={() => navigate("/")} size="sm">{t('creations.createFirst')}</Button>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -148,7 +144,7 @@ const MyCreations = () => {
                       <button
                         onClick={() => handleTogglePublic(creation)}
                         className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-                        title={creation.is_public ? "设为私密" : "公开"}
+                        title={creation.is_public ? t('creations.makePrivate') : t('creations.makePublic')}
                       >
                         {creation.is_public ? (
                           <Globe className="w-4 h-4 text-primary" />
