@@ -695,7 +695,7 @@ IMPORTANT: Output the HTML code directly, without any markdown formatting or cod
         headers: {
           "Content-Type": "application/json",
         },
-          body: JSON.stringify({
+        body: JSON.stringify({
           contents: [
             {
               parts: [
