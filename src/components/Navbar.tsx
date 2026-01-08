@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import AuthModal from "./AuthModal";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { Logo } from "./Logo";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,14 +45,7 @@ const Navbar = () => {
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <a href="/" className="flex items-baseline gap-0">
-              <span className="font-display font-bold text-xl tracking-tight text-gradient-primary">
-                byvibe
-              </span>
-              <span className="font-display font-bold text-xl tracking-tight text-foreground/70">
-                .ai
-              </span>
-            </a>
+            <Logo size="lg" href="/" />
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-8">

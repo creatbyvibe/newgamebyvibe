@@ -3,6 +3,7 @@ import Navbar from "@/components/Navbar";
 import AICreator from "@/components/AICreator";
 import WorkGallery from "@/components/WorkGallery";
 import { SEO } from "@/components/SEO";
+import { Logo } from "@/components/Logo";
 import { useTranslation } from "react-i18next";
 import {
   Sparkles,
@@ -238,14 +239,7 @@ const Index = () => {
           <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-8">
             {/* Logo */}
             <div>
-              <div className="flex items-baseline gap-0">
-                <span className="font-display font-bold text-xl tracking-tight text-gradient-primary">
-                  byvibe
-                </span>
-                <span className="font-display font-bold text-xl tracking-tight text-foreground/50">
-                  .ai
-                </span>
-              </div>
+              <Logo size="lg" variant="footer" />
               <p className="text-sm text-muted-foreground mt-2">
                 {t('home.footerDesc')}
               </p>
