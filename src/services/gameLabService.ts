@@ -25,6 +25,14 @@ export interface GameFusionResult {
 export interface GenerateGameInput {
   fusionResult?: GameFusionResult;
   prompt?: string;
+  categoryId?: string;
+  templateId?: string;
+  config?: {
+    difficulty?: 'beginner' | 'intermediate' | 'advanced';
+    theme?: string;
+    mechanics?: string[];
+    [key: string]: unknown;
+  };
 }
 
 // 兼容旧的调用方式
@@ -57,6 +65,7 @@ export const gameLabService = {
 
   /**
    * 生成游戏代码（流式响应）
+   * 支持类别和模板参数，保持向后兼容
    */
   async generateGame(
     input: GenerateGameInput,
@@ -70,9 +79,29 @@ export const gameLabService = {
         : `Game concept: ${input.fusionResult.name} - ${input.fusionResult.description}`;
     }
     
+    // 构建请求参数，支持新参数但保持向后兼容
+    const requestParams: {
+      prompt: string;
+      categoryId?: string;
+      templateId?: string;
+      config?: GenerateGameInput['config'];
+    } = { prompt };
+    
+    if (input.categoryId) {
+      requestParams.categoryId = input.categoryId;
+    }
+    
+    if (input.templateId) {
+      requestParams.templateId = input.templateId;
+    }
+    
+    if (input.config) {
+      requestParams.config = input.config;
+    }
+    
     return apiClient.invokeFunctionStream(
       'generate-creation',
-      { prompt },
+      requestParams,
       onChunk
     );
   },

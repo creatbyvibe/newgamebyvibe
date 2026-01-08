@@ -249,17 +249,12 @@ const StudioPage = () => {
     setSaveStatus('saving');
     
     try {
-      // Save current version to history (使用 apiClient)
-      const { apiClient } = await import('@/lib/apiClient');
-      const { supabase } = await import('@/integrations/supabase/client');
-      
-      await apiClient.execute(() =>
-        supabase.from('creation_versions').insert({
-          creation_id: creation.id,
-          version: creation.version || 1,
-          html_code: lastSavedCodeRef.current,
-          change_note: 'Manual save',
-        })
+      // Save current version to history
+      await creationService.createVersion(
+        creation.id,
+        creation.version || 1,
+        lastSavedCodeRef.current,
+        'Manual save'
       );
       
       // Update creation with new version

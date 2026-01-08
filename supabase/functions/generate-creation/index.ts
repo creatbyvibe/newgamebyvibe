@@ -11,8 +11,9 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt } = await req.json();
+    const { prompt, categoryId, templateId, config } = await req.json();
     
+    // Backward compatibility: if no prompt but has categoryId/templateId, still require prompt
     if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
       return new Response(
         JSON.stringify({ error: "Please provide a valid prompt" }),
@@ -25,7 +26,67 @@ serve(async (req) => {
       throw new Error("GEMINI_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are an expert game developer AI that creates fun, FULLY PLAYABLE HTML5 games.
+    // Get Supabase client for database queries (if categoryId or templateId provided)
+    let category = null;
+    let template = null;
+    
+    if (categoryId || templateId) {
+      const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+      const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      
+      if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+        console.warn("Supabase credentials not configured, falling back to simple prompt");
+      } else {
+        try {
+          // Fetch category if provided
+          if (categoryId) {
+            const categoryRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/game_categories?id=eq.${categoryId}&select=*`,
+              {
+                headers: {
+                  "apikey": SUPABASE_SERVICE_ROLE_KEY,
+                  "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+                },
+              }
+            );
+            if (categoryRes.ok) {
+              const categoryData = await categoryRes.json();
+              category = categoryData[0] || null;
+            }
+          }
+
+          // Fetch template if provided
+          if (templateId) {
+            const templateRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/game_templates?id=eq.${templateId}&select=*`,
+              {
+                headers: {
+                  "apikey": SUPABASE_SERVICE_ROLE_KEY,
+                  "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+                },
+              }
+            );
+            if (templateRes.ok) {
+              const templateData = await templateRes.json();
+              template = templateData[0] || null;
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching category/template:", error);
+          // Continue with simple prompt if fetch fails
+        }
+      }
+    }
+
+    // Build optimized prompt if category/template available, otherwise use default
+    let systemPrompt: string;
+    
+    if (category || template) {
+      // Build optimized prompt using category and template
+      systemPrompt = buildOptimizedPrompt(category, template, config || {}, prompt);
+    } else {
+      // Use original system prompt for backward compatibility
+      systemPrompt = `You are an expert game developer AI that creates fun, FULLY PLAYABLE HTML5 games.
 
 CRITICAL: The game MUST be completely functional and playable immediately. No placeholder code, no TODO comments, no "game loop placeholder" - the game must work!
 
@@ -497,14 +558,32 @@ CONTROL REQUIREMENTS:
 - Touch: swipe or tap controls for mobile
 - Show control instructions on title screen
 
-CRITICAL OUTPUT REQUIREMENTS:
+CRITICAL OUTPUT REQUIREMENTS (MANDATORY - NO EXCEPTIONS):
 - Return ONLY the complete HTML code
 - MUST start with <!DOCTYPE html> and end with </html>
 - MUST include all CSS in <style> tags
 - MUST include all JavaScript in <script> tags
 - DO NOT include any markdown code blocks (no triple backticks)
 - DO NOT include any explanations or comments outside the HTML
+- DO NOT add any text before <!DOCTYPE html>
+- DO NOT add any text after </html>
 - The game MUST be playable - test your logic mentally before outputting!
+- Output format: Raw HTML ONLY, nothing else
+
+STRICT OUTPUT FORMAT:
+Your response must follow this EXACT format:
+<!DOCTYPE html>
+<html>
+<head>
+  <!-- CSS here -->
+</head>
+<body>
+  <!-- Game content here -->
+  <!-- JavaScript here -->
+</body>
+</html>
+
+NO other text, NO explanations, NO markdown, NO code blocks. Just the raw HTML code starting with <!DOCTYPE html> and ending with </html>.
 
 IMPORTANT: Output the HTML code directly, without any markdown formatting or code blocks. Just the raw HTML starting with <!DOCTYPE html> and ending with </html>.`;
 
@@ -516,7 +595,7 @@ IMPORTANT: Output the HTML code directly, without any markdown formatting or cod
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
+          body: JSON.stringify({
           contents: [
             {
               parts: [
@@ -525,10 +604,18 @@ IMPORTANT: Output the HTML code directly, without any markdown formatting or cod
             },
           ],
           generationConfig: {
-            temperature: 0.9,
+            temperature: 0.7, // Reduced from 0.9 for more consistent output
             topK: 40,
             topP: 0.95,
-            maxOutputTokens: 8192,
+            maxOutputTokens: 16384, // Increased from 8192 for longer games
+            responseMimeType: "text/plain", // Force plain text output
+          },
+          systemInstruction: {
+            parts: [
+              {
+                text: "You are a game code generator. You MUST output ONLY raw HTML code starting with <!DOCTYPE html> and ending with </html>. NO markdown, NO explanations, NO code blocks. Just the HTML code."
+              }
+            ]
           },
         }),
       }
@@ -621,3 +708,98 @@ IMPORTANT: Output the HTML code directly, without any markdown formatting or cod
     );
   }
 });
+
+// Helper function to build optimized prompt
+function buildOptimizedPrompt(cat: any, tmpl: any, cfg: any, userPrompt: string): string {
+  let optimizedPrompt = '';
+
+  // Add category-specific system prompt if available
+  if (cat?.system_prompt) {
+    optimizedPrompt += `${cat.system_prompt}\n\n`;
+  } else {
+    optimizedPrompt += `You are an expert game developer AI that creates fun, FULLY PLAYABLE HTML5 games.\n\n`;
+  }
+
+  // Add template example code as Few-Shot Learning
+  if (tmpl?.example_code) {
+    optimizedPrompt += `Here's an example of a ${tmpl.name} game:\n\n`;
+    optimizedPrompt += `<example>\n${tmpl.example_code}\n</example>\n\n`;
+    optimizedPrompt += `Create a similar game based on the following requirements:\n\n`;
+  }
+
+  // Add category-specific constraints and best practices
+  if (cat?.metadata) {
+    const metadata = typeof cat.metadata === 'string' ? JSON.parse(cat.metadata) : cat.metadata;
+    
+    // Add category few-shot examples if available
+    if (metadata.fewShotExamples && Array.isArray(metadata.fewShotExamples) && metadata.fewShotExamples.length > 0) {
+      const examples = metadata.fewShotExamples;
+      optimizedPrompt += `Here are ${examples.length} additional complete card game examples to learn from:\n\n`;
+      examples.forEach((example: string, index: number) => {
+        optimizedPrompt += `EXAMPLE ${index + 1}:\n${example}\n\n`;
+      });
+      optimizedPrompt += `Study these examples carefully. Notice:\n`;
+      optimizedPrompt += `- Complete HTML structure with DOCTYPE, html, head, body tags\n`;
+      optimizedPrompt += `- All CSS in <style> tags\n`;
+      optimizedPrompt += `- All JavaScript in <script> tags\n`;
+      optimizedPrompt += `- Fully functional game logic\n`;
+      optimizedPrompt += `- Clear visual design\n`;
+      optimizedPrompt += `- Interactive elements with event handlers\n\n`;
+    }
+    
+    if (metadata.constraints && Array.isArray(metadata.constraints) && metadata.constraints.length > 0) {
+      optimizedPrompt += `Constraints:\n`;
+      metadata.constraints.forEach((constraint: string) => {
+        optimizedPrompt += `- ${constraint}\n`;
+      });
+      optimizedPrompt += `\n`;
+    }
+
+    if (metadata.best_practices && Array.isArray(metadata.best_practices) && metadata.best_practices.length > 0) {
+      optimizedPrompt += `Best Practices:\n`;
+      metadata.best_practices.forEach((practice: string) => {
+        optimizedPrompt += `- ${practice}\n`;
+      });
+      optimizedPrompt += `\n`;
+    }
+
+    if (metadata.mechanics && Array.isArray(metadata.mechanics) && metadata.mechanics.length > 0) {
+      optimizedPrompt += `Game Mechanics:\n`;
+      metadata.mechanics.forEach((mechanic: string) => {
+        optimizedPrompt += `- ${mechanic}\n`;
+      });
+      optimizedPrompt += `\n`;
+    }
+  }
+
+  // Add template-specific configuration
+  if (tmpl?.config) {
+    const tmplConfig = typeof tmpl.config === 'string' ? JSON.parse(tmpl.config) : tmpl.config;
+    if (tmplConfig.theme) {
+      optimizedPrompt += `Theme: ${tmplConfig.theme}\n\n`;
+    }
+    if (tmplConfig.features && Array.isArray(tmplConfig.features) && tmplConfig.features.length > 0) {
+      optimizedPrompt += `Features to include:\n`;
+      tmplConfig.features.forEach((feature: string) => {
+        optimizedPrompt += `- ${feature}\n`;
+      });
+      optimizedPrompt += `\n`;
+    }
+  }
+
+  // Add user's custom prompt
+  optimizedPrompt += `User Requirements:\n${userPrompt}\n\n`;
+
+  // Add final instructions
+  optimizedPrompt += `\nInstructions:\n`;
+  optimizedPrompt += `- Generate a complete, playable HTML game\n`;
+  optimizedPrompt += `- Include all necessary HTML, CSS, and JavaScript in a single file\n`;
+  optimizedPrompt += `- Ensure the game is fully functional and interactive\n`;
+  optimizedPrompt += `- Add clear instructions for the player\n`;
+  optimizedPrompt += `- Use a fun, colorful visual style\n`;
+  optimizedPrompt += `- Make sure the game is responsive and works on different screen sizes\n`;
+  optimizedPrompt += `- Output the HTML code directly, without any markdown formatting or code blocks\n`;
+  optimizedPrompt += `- Just the raw HTML starting with <!DOCTYPE html> and ending with </html>\n`;
+
+  return optimizedPrompt;
+}

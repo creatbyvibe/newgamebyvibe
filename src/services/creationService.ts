@@ -173,4 +173,80 @@ export const creationService = {
         .limit(limit)
     );
   },
+
+  /**
+   * 创建版本记录
+   */
+  async createVersion(
+    creationId: string,
+    version: number,
+    htmlCode: string,
+    changeNote?: string
+  ): Promise<void> {
+    if (!creationId || typeof creationId !== 'string' || creationId.trim() === '') {
+      throw new Error('Invalid creation ID');
+    }
+    
+    if (!htmlCode || typeof htmlCode !== 'string') {
+      throw new Error('Invalid html code');
+    }
+
+    return apiClient.execute(() =>
+      supabase
+        .from('creation_versions')
+        .insert({
+          creation_id: creationId.trim(),
+          version,
+          html_code: htmlCode,
+          change_note: changeNote || null,
+        })
+    );
+  },
+
+  /**
+   * 获取创作的所有版本
+   */
+  async getVersions(creationId: string): Promise<Array<{
+    id: string;
+    version: number;
+    html_code: string;
+    change_note: string | null;
+    created_at: string | null;
+  }>> {
+    if (!creationId || typeof creationId !== 'string' || creationId.trim() === '') {
+      throw new Error('Invalid creation ID');
+    }
+
+    return apiClient.query(() =>
+      supabase
+        .from('creation_versions')
+        .select('id, version, html_code, change_note, created_at')
+        .eq('creation_id', creationId.trim())
+        .order('version', { ascending: false })
+    );
+  },
+
+  /**
+   * 根据版本号获取特定版本
+   */
+  async getVersionById(creationId: string, version: number): Promise<{
+    id: string;
+    version: number;
+    html_code: string;
+    change_note: string | null;
+    created_at: string | null;
+  } | null> {
+    if (!creationId || typeof creationId !== 'string' || creationId.trim() === '') {
+      throw new Error('Invalid creation ID');
+    }
+
+    return apiClient.queryNullable(() =>
+      supabase
+        .from('creation_versions')
+        .select('id, version, html_code, change_note, created_at')
+        .eq('creation_id', creationId.trim())
+        .eq('version', version)
+        .maybeSingle()
+    );
+  },
 };

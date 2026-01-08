@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { creationService } from '@/services/creationService';
+import { ErrorHandler } from '@/lib/errorHandler';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, History, RotateCcw, Clock } from 'lucide-react';
@@ -43,22 +44,29 @@ const VersionHistory = ({ creationId, onRestore }: VersionHistoryProps) => {
     }
 
     const fetchVersions = async () => {
-      const { data, error } = await supabase
-        .from('creation_versions')
-        .select('*')
-        .eq('creation_id', creationId)
-        .order('version', { ascending: false });
-
-      if (error) {
-        console.error('Failed to fetch versions:', error);
-      } else {
-        setVersions(data || []);
+      try {
+        const data = await creationService.getVersions(creationId);
+        setVersions(data.map(v => ({
+          id: v.id,
+          version: v.version,
+          html_code: v.html_code,
+          change_note: v.change_note,
+          created_at: v.created_at || '',
+        })));
+      } catch (error) {
+        ErrorHandler.logError(error, 'VersionHistory.fetchVersions');
+        toast({
+          title: 'Error',
+          description: ErrorHandler.getUserMessage(error),
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchVersions();
-  }, [user, creationId]);
+  }, [user, creationId, toast]);
 
   const handleRestore = (version: Version) => {
     onRestore(version.html_code, version.version);

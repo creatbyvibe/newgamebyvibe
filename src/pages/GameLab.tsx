@@ -14,7 +14,8 @@ import {
   Laugh,
   Target,
   Loader2,
-  ArrowRight
+  ArrowRight,
+  Settings
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
@@ -25,6 +26,11 @@ import { gameLabService } from "@/services/gameLabService";
 import { creationService } from "@/services/creationService";
 import { ErrorHandler } from "@/lib/errorHandler";
 import { getRandomMessage } from "@/lib/utils/messageUtils";
+import { GameCategorySelector } from "@/components/GameCategorySelector";
+import { TemplatePreview } from "@/components/TemplatePreview";
+import type { GameCategory, GameTemplate } from "@/types/game";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { generateGameWithHighReliability } from "@/lib/gameGenerator";
 
 interface GameType {
   id: string;
@@ -75,6 +81,9 @@ const GameLab = () => {
   } | null>(null);
   const [loadingStep, setLoadingStep] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [selectedCategory, setSelectedCategory] = useState<GameCategory | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<GameTemplate | null>(null);
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
   
   const loadingSteps = [
     { text: t('gameLab.analyzingMechanics'), icon: Brain },
@@ -127,9 +136,7 @@ const GameLab = () => {
     }, 2500);
 
     try {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:87',message:'handleFusion started',data:{selectedGamesCount:selectedGames.length,selectedGames:selectedGames.map(g=>g.name),supabaseUrl:import.meta.env.VITE_SUPABASE_URL,hasSupabaseKey:!!import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-      // #endregion
+      // Remove agent log fetch call
 
       const gameNames = selectedGames.map(g => g.name).join(" + ");
       const gamesDescription = selectedGames.map(g => `${g.name} (${g.description})`).join(", ");
@@ -146,19 +153,80 @@ const GameLab = () => {
         })),
       });
 
-      // 使用 gameLabService 生成游戏代码（流式响应）
-      let fullContent = "";
+      // 使用高可靠性生成器（自动重试和修复）
+      let htmlCode = "";
       
       try {
-        fullContent = await gameLabService.generateGame(
+        // 构建生成参数，支持类别和模板
+        const generateInput: Parameters<typeof gameLabService.generateGame>[0] = {
+          fusionResult: concept,
+          prompt: prompt,
+        };
+
+        // 如果选择了类别和模板，添加到生成参数
+        if (selectedCategory) {
+          generateInput.categoryId = selectedCategory.id;
+        }
+        if (selectedTemplate) {
+          generateInput.templateId = selectedTemplate.id;
+          // 增加模板使用次数
+          try {
+            await import('@/services/templateService').then(({ templateService }) =>
+              templateService.incrementUsageCount(selectedTemplate.id)
+            );
+          } catch (error) {
+            // 静默失败，不影响主流程
+            console.warn('Failed to increment template usage:', error);
+          }
+        }
+        if (selectedCategory || selectedTemplate) {
+          generateInput.config = {
+            difficulty: selectedTemplate?.difficulty,
+          };
+        }
+
+        // Use high-reliability generator with automatic retry and repair
+        const generationResult = await generateGameWithHighReliability(
+          generateInput,
           {
-            fusionResult: concept,
-            prompt: prompt, // gameLabService 会自动构建完整的 prompt
-          },
-          (chunk) => {
-            // 实时更新进度（可选）
+            maxRetries: 5,
+            useAutoRepair: true,
+            strictValidation: true,
+            onProgress: (attempt, status) => {
+              // Update loading message
+              console.log(`Generation attempt ${attempt}: ${status}`);
+            },
           }
         );
+
+        if (!generationResult.success || !generationResult.htmlCode) {
+          // Log all errors for debugging
+          console.error('Generation failed:', {
+            attempts: generationResult.attempts,
+            errors: generationResult.errors,
+            warnings: generationResult.warnings,
+          });
+          
+          // Try to provide helpful error message
+          let errorMsg = getRandomMessage(t('gameLab.generationFailed'));
+          if (generationResult.errors.length > 0) {
+            const lastError = generationResult.errors[generationResult.errors.length - 1];
+            if (lastError.includes('HTML提取失败') || lastError.includes('提取')) {
+              errorMsg = getRandomMessage(t('gameLab.htmlExtractError'));
+            } else if (lastError.includes('验证失败') || lastError.includes('验证')) {
+              errorMsg = getRandomMessage(t('gameLab.validationFailed')) || '代码验证失败，请重试';
+            }
+          }
+          
+          throw new Error(errorMsg);
+        }
+
+        htmlCode = generationResult.htmlCode;
+        
+        // Log warnings if any
+        if (generationResult.warnings.length > 0) {
+          console.warn('Generation warnings:', generationResult.warnings);
+        }
       } catch (error: any) {
         ErrorHandler.logError(error, 'GameLab.generateGame');
         let errorMsg = ErrorHandler.getUserMessage(error);
@@ -177,45 +245,6 @@ const GameLab = () => {
         throw new Error(errorMsg);
       }
 
-      // Extract HTML with multiple fallback strategies
-      let htmlCode = "";
-      
-      // Strategy 1: Look for markdown code blocks
-      const htmlMatch = fullContent.match(/```html\s*([\s\S]*?)```/);
-      if (htmlMatch) {
-        htmlCode = htmlMatch[1].trim();
-      } else {
-        // Strategy 2: Look for HTML wrapped in code blocks without language tag
-        const codeBlockMatch = fullContent.match(/```\s*([\s\S]*?)```/);
-        if (codeBlockMatch && codeBlockMatch[1].includes("<!DOCTYPE html")) {
-          htmlCode = codeBlockMatch[1].trim();
-        } else {
-          // Strategy 3: Look for raw HTML with DOCTYPE
-          const doctypeMatch = fullContent.match(/(<!DOCTYPE html[\s\S]*<\/html>)/i);
-          if (doctypeMatch) {
-            htmlCode = doctypeMatch[1];
-          } else {
-            // Strategy 4: Look for HTML without DOCTYPE (just <html> tag)
-            const htmlTagMatch = fullContent.match(/(<html[\s\S]*<\/html>)/i);
-            if (htmlTagMatch) {
-              htmlCode = htmlTagMatch[1];
-            } else {
-              // Strategy 5: If content looks like HTML, use it directly
-              if (fullContent.trim().startsWith("<") && fullContent.includes("</html>")) {
-                htmlCode = fullContent.trim();
-              }
-            }
-          }
-        }
-      }
-
-      // Validate extracted HTML
-      if (!htmlCode || (!htmlCode.includes("<!DOCTYPE html") && !htmlCode.includes("<html"))) {
-        // Log the issue for debugging
-        console.error("HTML extraction failed. Full content preview:", fullContent.substring(0, 500));
-        throw new Error(getRandomMessage(t('gameLab.htmlExtractError')));
-      }
-
       // 完成进度
       clearInterval(progressInterval);
       clearInterval(stepInterval);
@@ -232,9 +261,7 @@ const GameLab = () => {
         code: htmlCode,
       });
 
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/938b3518-4852-4c89-8195-34f66fcdebec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GameLab.tsx:185',message:'Fusion success',data:{hasCode:!!htmlCode,codeLength:htmlCode.length,hasConcept:!!concept},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'ALL'})}).catch(()=>{});
-      // #endregion
+      // Remove agent log fetch call
 
       toast.success(getRandomMessage(t('gameLab.success')));
     } catch (error) {
@@ -459,6 +486,54 @@ const GameLab = () => {
                 );
               })}
             </div>
+          </div>
+
+          {/* Advanced Options: Category and Template Selection */}
+          <div className="mb-8">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+              className="gap-2 mb-4"
+            >
+              <Settings className="w-4 h-4" />
+              {showAdvancedOptions ? '隐藏' : '显示'}高级选项
+            </Button>
+
+            {showAdvancedOptions && (
+              <Tabs defaultValue="category" className="space-y-4">
+                <TabsList>
+                  <TabsTrigger value="category">游戏类别</TabsTrigger>
+                  <TabsTrigger value="template" disabled={!selectedCategory}>
+                    模板选择
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="category">
+                  <GameCategorySelector
+                    selectedCategoryId={selectedCategory?.id}
+                    onSelect={(category) => {
+                      setSelectedCategory(category);
+                      setSelectedTemplate(null); // Reset template when category changes
+                    }}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="template">
+                  {selectedCategory ? (
+                    <TemplatePreview
+                      categoryId={selectedCategory.id}
+                      selectedTemplateId={selectedTemplate?.id}
+                      onSelect={(template) => setSelectedTemplate(template)}
+                    />
+                  ) : (
+                    <div className="text-center p-8 text-muted-foreground">
+                      <p>请先选择游戏类别</p>
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
+            )}
           </div>
 
           {/* Fusion Button */}
