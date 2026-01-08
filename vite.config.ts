@@ -20,9 +20,13 @@ export default defineConfig(() => ({
         manualChunks: (id) => {
           // 将 node_modules 中的依赖包分离
           if (id.includes('node_modules')) {
-            // React 核心库
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+            // React 核心库（确保 react 和 react-dom 在同一 chunk，避免 createContext 错误）
+            if (id.includes('/react/') || id.includes('/react-dom/') || id.includes('/react/jsx-runtime')) {
               return 'react-vendor';
+            }
+            // React Router（与 React 分离）
+            if (id.includes('react-router')) {
+              return 'react-router-vendor';
             }
             // UI 组件库
             if (id.includes('@radix-ui')) {
