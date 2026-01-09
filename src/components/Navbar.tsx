@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Menu, X, User, LogOut, Cards } from "lucide-react";
+import { Sparkles, Menu, X, User, LogOut, CreditCard } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import AuthModal from "./AuthModal";
@@ -65,7 +65,7 @@ const Navbar = () => {
                 href="/card-game"
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
               >
-                <Cards className="w-4 h-4" />
+                <CreditCard className="w-4 h-4" />
                 {t('navbar.cardGame')}
               </a>
               <a
@@ -143,7 +143,7 @@ const Navbar = () => {
                   href="/card-game"
                   className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2 flex items-center gap-2"
                 >
-                  <Cards className="w-4 h-4" />
+                  <CreditCard className="w-4 h-4" />
                   {t('navbar.cardGame')}
                 </a>
                 <a

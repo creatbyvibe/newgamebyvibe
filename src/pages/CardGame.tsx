@@ -9,7 +9,7 @@ import {
   Loader2,
   Sparkles,
   Zap,
-  Cards
+  CreditCard
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
@@ -367,7 +367,7 @@ const CardGame = () => {
             </Button>
             
             <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-full px-4 py-1.5 mb-4">
-              <Cards className="w-4 h-4 text-purple-500" />
+              <CreditCard className="w-4 h-4 text-purple-500" />
               <span className="text-sm font-medium text-purple-600">{t('cardGame.badge')}</span>
             </div>
             
