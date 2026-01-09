@@ -17,6 +17,7 @@ const CreationPage = lazy(() => import("./pages/CreationPage"));
 const Inspiration = lazy(() => import("./pages/Inspiration"));
 const StudioPage = lazy(() => import("./pages/StudioPage"));
 const GameLab = lazy(() => import("./pages/GameLab"));
+const CardGame = lazy(() => import("./pages/CardGame"));
 const Community = lazy(() => import("./pages/Community"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -69,6 +70,14 @@ const App = () => (
                   element={
                     <Suspense fallback={<Loading text="加载游戏实验室..." />}>
                       <GameLab />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/card-game"
+                  element={
+                    <Suspense fallback={<Loading text="加载卡牌游戏..." />}>
+                      <CardGame />
                     </Suspense>
                   }
                 />

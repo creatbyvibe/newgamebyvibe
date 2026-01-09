@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { 
   FlaskConical, 
@@ -22,7 +22,7 @@ import Navbar from "@/components/Navbar";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
-import { gameLabService } from "@/services/gameLabService";
+import { gameLabService, type GameFusionResult } from "@/services/gameLabService";
 import { creationService } from "@/services/creationService";
 import { ErrorHandler } from "@/lib/errorHandler";
 import { getRandomMessage } from "@/lib/utils/messageUtils";
@@ -30,6 +30,7 @@ import { GameCategorySelector } from "@/components/GameCategorySelector";
 import { TemplatePreview } from "@/components/TemplatePreview";
 import type { GameCategory, GameTemplate } from "@/types/game";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { generateGameWithHighReliability } from "@/lib/gameGenerator";
 
 interface GameType {
@@ -84,6 +85,24 @@ const GameLab = () => {
   const [selectedCategory, setSelectedCategory] = useState<GameCategory | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<GameTemplate | null>(null);
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  const [customDescription, setCustomDescription] = useState<string>("");
+  
+  // 创建模式：'fusion' (融合模式) 或 'category' (类别创建模式)
+  const creationMode = useMemo(() => {
+    return selectedCategory ? 'category' : 'fusion';
+  }, [selectedCategory]);
+  
+  // 当类别改变时，清理不相关的状态
+  useEffect(() => {
+    if (creationMode === 'category') {
+      // 切换到类别模式时，清空已选游戏
+      setSelectedGames([]);
+      // 如果切换类别，清空模板选择
+      if (!selectedCategory) {
+        setSelectedTemplate(null);
+      }
+    }
+  }, [creationMode, selectedCategory]);
   
   const loadingSteps = [
     { text: t('gameLab.analyzingMechanics'), icon: Brain },
@@ -109,9 +128,23 @@ const GameLab = () => {
   };
 
   const handleFusion = async () => {
-    if (selectedGames.length < 2) {
-      toast.error(getRandomMessage(t('gameLab.minGamesRequired')));
-      return;
+    // 根据创建模式进行验证
+    if (creationMode === 'fusion') {
+      // 融合模式：需要至少2个游戏类型
+      if (selectedGames.length < 2) {
+        toast.error(getRandomMessage(t('gameLab.minGamesRequired')));
+        return;
+      }
+    } else if (creationMode === 'category') {
+      // 独立创建模式：需要选择类别，模板或自定义描述可选
+      if (!selectedCategory) {
+        toast.error(t('gameLab.selectCategoryFirst'));
+        return;
+      }
+      if (!selectedTemplate && !customDescription.trim()) {
+        toast.error(getRandomMessage(t('gameLab.selectTemplateRequired')));
+        return;
+      }
     }
 
     setIsGenerating(true);
@@ -136,22 +169,49 @@ const GameLab = () => {
     }, 2500);
 
     try {
-      // Remove agent log fetch call
+      let concept: GameFusionResult | null = null;
+      let prompt = "";
+      
+      // 根据创建模式决定处理逻辑
+      if (creationMode === 'fusion') {
+        // 融合模式：使用原有逻辑
+        const gameNames = selectedGames.map(g => g.name).join(" + ");
+        const gamesDescription = selectedGames.map(g => `${g.name} (${g.description})`).join(", ");
+        prompt = t('gameLab.fusionPrompt', { games: gamesDescription });
 
-      const gameNames = selectedGames.map(g => g.name).join(" + ");
-      const gamesDescription = selectedGames.map(g => `${g.name} (${g.description})`).join(", ");
-      const prompt = t('gameLab.fusionPrompt', { games: gamesDescription });
-
-      // First, get the AI to generate scores and concept
-      // 使用 gameLabService 融合游戏概念
-      const concept = await gameLabService.fuseGames({
-        selectedGames: selectedGames.map(g => ({
-          id: g.id,
-          name: g.name,
-          emoji: g.emoji,
-          description: g.description,
-        })),
-      });
+        // 使用 gameLabService 融合游戏概念
+        concept = await gameLabService.fuseGames({
+          selectedGames: selectedGames.map(g => ({
+            id: g.id,
+            name: g.name,
+            emoji: g.emoji,
+            description: g.description,
+          })),
+        });
+      } else if (creationMode === 'category') {
+        // 独立创建模式：跳过融合步骤，构建基于类别的提示
+        if (customDescription.trim()) {
+          prompt = customDescription.trim();
+        } else if (selectedTemplate) {
+          prompt = `${selectedCategory?.name || selectedCategory?.name_en} - ${selectedTemplate.name || selectedTemplate.name_en}`;
+        } else {
+          prompt = `${selectedCategory?.name || selectedCategory?.name_en} 游戏`;
+        }
+        
+        // 为独立创建模式创建默认概念对象
+        concept = {
+          name: selectedTemplate?.name || selectedCategory?.name || "自定义游戏",
+          description: selectedTemplate?.description || selectedCategory?.description || customDescription.trim() || "基于选定类别和模板创建的游戏",
+          scores: {
+            creativity: 7,
+            playability: 8,
+            weirdness: 5,
+            addiction: 7,
+            overall: 7,
+            comment: "基于选定类别和模板生成的游戏",
+          },
+        };
+      }
 
       // 使用高可靠性生成器（自动重试和修复）
       let htmlCode = "";
@@ -159,9 +219,13 @@ const GameLab = () => {
       try {
         // 构建生成参数，支持类别和模板
         const generateInput: Parameters<typeof gameLabService.generateGame>[0] = {
-          fusionResult: concept,
           prompt: prompt,
         };
+
+        // 如果是融合模式，添加融合结果
+        if (creationMode === 'fusion' && concept) {
+          generateInput.fusionResult = concept;
+        }
 
         // 如果选择了类别和模板，添加到生成参数
         if (selectedCategory) {
@@ -254,6 +318,11 @@ const GameLab = () => {
       // 短暂延迟以显示完成状态
       await new Promise(resolve => setTimeout(resolve, 300));
 
+      // 确保 concept 存在
+      if (!concept) {
+        throw new Error('Game concept generation failed');
+      }
+
       setGeneratedGame({
         name: concept.name,
         description: concept.description,
@@ -338,7 +407,19 @@ const GameLab = () => {
     if (!generatedGame?.code) return;
 
     const title = generatedGame.name;
-    const prompt = `${t('gameLab.fusionLabel')} ${selectedGames.map(g => g.name).join(" + ")}`;
+    let prompt = "";
+    
+    if (creationMode === 'category' && selectedCategory) {
+      // 类别模式：使用类别和模板信息
+      if (selectedTemplate) {
+        prompt = `${selectedCategory.name} - ${selectedTemplate.name}`;
+      } else {
+        prompt = `${selectedCategory.name}${customDescription.trim() ? ` - ${customDescription.trim()}` : ''}`;
+      }
+    } else {
+      // 融合模式：使用原有的游戏列表
+      prompt = `${t('gameLab.fusionLabel')} ${selectedGames.map(g => g.name).join(" + ")}`;
+    }
 
     if (user) {
       try {
@@ -417,156 +498,270 @@ const GameLab = () => {
               <span className="text-gradient-primary">{t('gameLab.title')}</span>
             </h1>
             <p className="text-muted-foreground max-w-lg mx-auto">
-              {t('gameLab.description')}
+              {creationMode === 'category' 
+                ? t('gameLab.categoryModeDescription')
+                : t('gameLab.description')
+              }
               <br />
-              <span className="text-foreground font-medium">{t('gameLab.descriptionHint')}</span>
+              {creationMode === 'fusion' && (
+                <span className="text-foreground font-medium">{t('gameLab.descriptionHint')}</span>
+              )}
             </p>
           </div>
 
-          {/* Selected Games */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-display font-semibold">{t('gameLab.selected')} ({selectedGames.length}/3)</h2>
-              <Button variant="outline" size="sm" onClick={randomSelect} className="gap-2">
-                <Shuffle className="w-4 h-4" />
-                {t('gameLab.randomSelect')}
-              </Button>
+          {/* Mode Indicator and Switch */}
+          {creationMode === 'category' && (
+            <div className="mb-6 flex items-center justify-center">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-lg">
+                <span className="text-sm font-medium text-primary">{t('gameLab.categoryMode')}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedCategory(null);
+                    setSelectedTemplate(null);
+                    setCustomDescription("");
+                  }}
+                  className="h-6 px-2 text-xs"
+                >
+                  {t('gameLab.switchToFusionMode')}
+                </Button>
+              </div>
             </div>
-            
-            <div className="flex flex-wrap gap-3 min-h-[60px] p-4 rounded-xl border-2 border-dashed border-muted-foreground/20 bg-muted/30">
-              {selectedGames.length === 0 ? (
-                <p className="text-muted-foreground text-sm w-full text-center py-2">
-                  {t('gameLab.clickToSelect')}
-                </p>
-              ) : (
-                <>
-                  {selectedGames.map((game, index) => (
-                    <div key={game.id} className="flex items-center gap-2">
-                      <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground">
-                        <span className="text-lg">{game.emoji}</span>
-                        <span className="font-medium">{game.name}</span>
-                        <button 
-                          onClick={() => toggleGame(game)}
-                          className="ml-1 hover:bg-white/20 rounded-full p-0.5"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
+          )}
+
+          {/* Category Creation Mode */}
+          {creationMode === 'category' && (
+            <div className="mb-8 space-y-6">
+              {/* Selected Category Display */}
+              {selectedCategory && (
+                <div className="bg-card border rounded-xl p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-3xl">{selectedCategory.icon || '🃏'}</span>
+                      <div>
+                        <h3 className="font-semibold text-lg">{selectedCategory.name}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {selectedCategory.description || selectedCategory.description_en}
+                        </p>
                       </div>
-                      {index < selectedGames.length - 1 && (
-                        <Zap className="w-5 h-5 text-primary animate-pulse" />
-                      )}
                     </div>
-                  ))}
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Game Types Grid */}
-          <div className="mb-8">
-            <h2 className="font-display font-semibold mb-4">{t('gameLab.gameTypes')}</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {gameTypes.map((game) => {
-                const isSelected = selectedGames.find(g => g.id === game.id);
-                return (
-                  <button
-                    key={game.id}
-                    onClick={() => toggleGame(game)}
-                    disabled={isGenerating}
-                    className={`p-4 rounded-xl border-2 transition-all duration-200 text-left ${
-                      isSelected
-                        ? "border-primary bg-primary/10 shadow-md"
-                        : "border-border hover:border-primary/50 hover:bg-muted/50"
-                    }`}
-                  >
-                    <span className="text-2xl block mb-2">{game.emoji}</span>
-                    <div className="font-medium text-sm">{game.name}</div>
-                    <div className="text-xs text-muted-foreground">{game.description}</div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Advanced Options: Category and Template Selection */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="font-display font-semibold mb-1">游戏分类与模板</h2>
-                <p className="text-sm text-muted-foreground">选择特定游戏类别（如卡牌游戏）或使用模板快速开始</p>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
-                className="gap-2"
-              >
-                <Settings className="w-4 h-4" />
-                {showAdvancedOptions ? t('gameLab.hideAdvancedOptions') : t('gameLab.showAdvancedOptions')}
-              </Button>
-            </div>
-
-            {showAdvancedOptions && (
-              <div className="bg-card border rounded-xl p-6">
-                <Tabs defaultValue="category" className="space-y-4">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="category">{t('gameLab.gameCategory')}</TabsTrigger>
-                    <TabsTrigger value="template" disabled={!selectedCategory}>
-                      {t('gameLab.templateSelection')}
-                    </TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="category" className="mt-4">
-                    <GameCategorySelector
-                      selectedCategoryId={selectedCategory?.id}
-                      onSelect={(category) => {
-                        setSelectedCategory(category);
-                        setSelectedTemplate(null); // Reset template when category changes
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedCategory(null);
+                        setSelectedTemplate(null);
+                        setCustomDescription("");
                       }}
-                    />
-                  </TabsContent>
-                  
-                  <TabsContent value="template" className="mt-4">
-                    {selectedCategory ? (
-                      <TemplatePreview
-                        categoryId={selectedCategory.id}
-                        selectedTemplateId={selectedTemplate?.id}
-                        onSelect={(template) => setSelectedTemplate(template)}
-                      />
-                    ) : (
-                      <div className="text-center p-8 text-muted-foreground">
-                        <p>{t('gameLab.selectCategoryFirst')}</p>
-                      </div>
-                    )}
-                  </TabsContent>
-                </Tabs>
-              </div>
-            )}
-          </div>
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
 
-          {/* Fusion Button */}
+              {/* Template Selection */}
+              <div className="bg-card border rounded-xl p-6">
+                <h3 className="font-semibold mb-4">{t('gameLab.templateSelection')}</h3>
+                {selectedCategory ? (
+                  <TemplatePreview
+                    categoryId={selectedCategory.id}
+                    selectedTemplateId={selectedTemplate?.id}
+                    onSelect={(template) => setSelectedTemplate(template)}
+                  />
+                ) : (
+                  <div className="text-center p-8 text-muted-foreground">
+                    <p>{t('gameLab.selectCategoryFirst')}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Custom Description */}
+              <div className="bg-card border rounded-xl p-6">
+                <h3 className="font-semibold mb-4">{t('gameLab.customDescription')}</h3>
+                <Textarea
+                  value={customDescription}
+                  onChange={(e) => setCustomDescription(e.target.value)}
+                  placeholder={selectedTemplate 
+                    ? `基于模板 "${selectedTemplate.name}" 的额外描述...`
+                    : selectedCategory
+                    ? `描述你想要创建的 ${selectedCategory.name} 游戏...`
+                    : "输入你的游戏想法..."
+                  }
+                  className="min-h-[120px]"
+                />
+                <p className="text-sm text-muted-foreground mt-2">
+                  {!selectedTemplate && !customDescription.trim() 
+                    ? t('gameLab.selectTemplateRequired')
+                    : "可选的：提供额外的游戏描述以帮助 AI 生成更符合你想法的游戏"
+                  }
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Fusion Mode */}
+          {creationMode === 'fusion' && (
+            <>
+              {/* Selected Games */}
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-display font-semibold">{t('gameLab.selected')} ({selectedGames.length}/3)</h2>
+                  <Button variant="outline" size="sm" onClick={randomSelect} className="gap-2">
+                    <Shuffle className="w-4 h-4" />
+                    {t('gameLab.randomSelect')}
+                  </Button>
+                </div>
+                
+                <div className="flex flex-wrap gap-3 min-h-[60px] p-4 rounded-xl border-2 border-dashed border-muted-foreground/20 bg-muted/30">
+                  {selectedGames.length === 0 ? (
+                    <p className="text-muted-foreground text-sm w-full text-center py-2">
+                      {t('gameLab.clickToSelect')}
+                    </p>
+                  ) : (
+                    <>
+                      {selectedGames.map((game, index) => (
+                        <div key={game.id} className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground">
+                            <span className="text-lg">{game.emoji}</span>
+                            <span className="font-medium">{game.name}</span>
+                            <button 
+                              onClick={() => toggleGame(game)}
+                              className="ml-1 hover:bg-white/20 rounded-full p-0.5"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                          {index < selectedGames.length - 1 && (
+                            <Zap className="w-5 h-5 text-primary animate-pulse" />
+                          )}
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Game Types Grid */}
+              <div className="mb-8">
+                <h2 className="font-display font-semibold mb-4">{t('gameLab.gameTypes')}</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {gameTypes.map((game) => {
+                    const isSelected = selectedGames.find(g => g.id === game.id);
+                    return (
+                      <button
+                        key={game.id}
+                        onClick={() => toggleGame(game)}
+                        disabled={isGenerating}
+                        className={`p-4 rounded-xl border-2 transition-all duration-200 text-left ${
+                          isSelected
+                            ? "border-primary bg-primary/10 shadow-md"
+                            : "border-border hover:border-primary/50 hover:bg-muted/50"
+                        }`}
+                      >
+                        <span className="text-2xl block mb-2">{game.emoji}</span>
+                        <div className="font-medium text-sm">{game.name}</div>
+                        <div className="text-xs text-muted-foreground">{game.description}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Advanced Options: Category and Template Selection */}
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="font-display font-semibold mb-1">游戏分类与模板</h2>
+                    <p className="text-sm text-muted-foreground">选择特定游戏类别（如卡牌游戏）或使用模板快速开始</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      提示：选择类别会切换到类别创建模式
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                    className="gap-2"
+                  >
+                    <Settings className="w-4 h-4" />
+                    {showAdvancedOptions ? t('gameLab.hideAdvancedOptions') : t('gameLab.showAdvancedOptions')}
+                  </Button>
+                </div>
+
+                {showAdvancedOptions && (
+                  <div className="bg-card border rounded-xl p-6">
+                    <Tabs defaultValue="category" className="space-y-4">
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="category">{t('gameLab.gameCategory')}</TabsTrigger>
+                        <TabsTrigger value="template" disabled={!selectedCategory}>
+                          {t('gameLab.templateSelection')}
+                        </TabsTrigger>
+                      </TabsList>
+                      
+                      <TabsContent value="category" className="mt-4">
+                        <GameCategorySelector
+                          selectedCategoryId={selectedCategory?.id}
+                          onSelect={(category) => {
+                            setSelectedCategory(category);
+                            setSelectedTemplate(null); // Reset template when category changes
+                          }}
+                        />
+                      </TabsContent>
+                      
+                      <TabsContent value="template" className="mt-4">
+                        {selectedCategory ? (
+                          <TemplatePreview
+                            categoryId={selectedCategory.id}
+                            selectedTemplateId={selectedTemplate?.id}
+                            onSelect={(template) => setSelectedTemplate(template)}
+                          />
+                        ) : (
+                          <div className="text-center p-8 text-muted-foreground">
+                            <p>{t('gameLab.selectCategoryFirst')}</p>
+                          </div>
+                        )}
+                      </TabsContent>
+                    </Tabs>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Generate/Fusion Button */}
           <div className="text-center mb-8">
             <Button
               size="lg"
               onClick={handleFusion}
-              disabled={selectedGames.length < 2 || isGenerating}
+              disabled={
+                isGenerating ||
+                (creationMode === 'fusion' && selectedGames.length < 2) ||
+                (creationMode === 'category' && (!selectedCategory || (!selectedTemplate && !customDescription.trim())))
+              }
               className="gap-2 px-8"
             >
               {isGenerating ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  {t('gameLab.fusing')}
+                  {creationMode === 'category' ? t('gameLab.generating') : t('gameLab.fusing')}
                 </>
               ) : (
                 <>
                   <FlaskConical className="w-5 h-5" />
-                  {t('gameLab.fuseGames')}
+                  {creationMode === 'category' ? t('gameLab.generateGame') : t('gameLab.fuseGames')}
                 </>
               )}
             </Button>
-            {selectedGames.length < 2 && (
+            {creationMode === 'fusion' && selectedGames.length < 2 && (
               <p className="text-sm text-muted-foreground mt-2">
                 {t('gameLab.minGamesHint')}
+              </p>
+            )}
+            {creationMode === 'category' && (!selectedCategory || (!selectedTemplate && !customDescription.trim())) && (
+              <p className="text-sm text-muted-foreground mt-2">
+                {t('gameLab.selectTemplateRequired')}
               </p>
             )}
           </div>
@@ -577,16 +772,32 @@ const GameLab = () => {
               <div className="relative h-48 overflow-hidden bg-gradient-to-br from-purple-500/20 via-pink-500/20 to-orange-500/20">
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="flex items-center gap-4">
-                    {selectedGames.map((game, i) => (
-                      <div key={game.id} className="flex items-center">
-                        <div className="text-5xl animate-bounce" style={{ animationDelay: `${i * 0.2}s` }}>
-                          {game.emoji}
+                    {creationMode === 'category' && selectedCategory ? (
+                      <>
+                        <div className="text-5xl animate-bounce">
+                          {selectedCategory.icon || '🃏'}
                         </div>
-                        {i < selectedGames.length - 1 && (
-                          <Zap className="w-8 h-8 text-yellow-500 mx-2 animate-pulse" />
+                        {selectedTemplate && (
+                          <>
+                            <Zap className="w-8 h-8 text-yellow-500 mx-2 animate-pulse" />
+                            <div className="text-4xl animate-bounce" style={{ animationDelay: '0.2s' }}>
+                              📋
+                            </div>
+                          </>
                         )}
-                      </div>
-                    ))}
+                      </>
+                    ) : (
+                      selectedGames.map((game, i) => (
+                        <div key={game.id} className="flex items-center">
+                          <div className="text-5xl animate-bounce" style={{ animationDelay: `${i * 0.2}s` }}>
+                            {game.emoji}
+                          </div>
+                          {i < selectedGames.length - 1 && (
+                            <Zap className="w-8 h-8 text-yellow-500 mx-2 animate-pulse" />
+                          )}
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
@@ -597,7 +808,10 @@ const GameLab = () => {
                     {loadingSteps[loadingStep]?.text || t('gameLab.generating')}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {selectedGames.map(g => g.name).join(t('gameLab.fusionSymbol'))} {t('gameLab.equalsQuestion')}
+                    {creationMode === 'category' && selectedCategory
+                      ? `${selectedCategory.name}${selectedTemplate ? ` - ${selectedTemplate.name}` : ''} ${t('gameLab.equalsQuestion')}`
+                      : selectedGames.map(g => g.name).join(t('gameLab.fusionSymbol')) + ' ' + t('gameLab.equalsQuestion')
+                    }
                   </p>
                 </div>
 
