@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { 
   FlaskConical, 
@@ -51,12 +51,6 @@ const gameTypes: GameType[] = [
   { id: "shooter", name: "射击", emoji: "🔫", description: "瞄准射击" },
   { id: "puzzle", name: "拼图", emoji: "🧩", description: "逻辑解谜" },
   { id: "match3", name: "三消", emoji: "💎", description: "配对消除" },
-  { id: "tower", name: "塔防", emoji: "🏰", description: "防守攻击" },
-  { id: "racing", name: "赛车", emoji: "🏎️", description: "竞速比赛" },
-  { id: "rhythm", name: "节奏", emoji: "🎵", description: "音乐节拍" },
-  { id: "farming", name: "种植", emoji: "🌱", description: "经营成长" },
-  { id: "fishing", name: "钓鱼", emoji: "🎣", description: "耐心等待" },
-  { id: "cooking", name: "烹饪", emoji: "🍳", description: "时间管理" },
 ];
 
 interface GameScore {
@@ -74,6 +68,7 @@ const GameLab = () => {
   const { t } = useTranslation();
   const [selectedGames, setSelectedGames] = useState<GameType[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [generatedGame, setGeneratedGame] = useState<{
     name: string;
     description: string;
@@ -104,15 +99,15 @@ const GameLab = () => {
     }
   }, [creationMode, selectedCategory]);
   
-  const loadingSteps = [
+  const loadingSteps = useMemo(() => [
     { text: t('gameLab.analyzingMechanics'), icon: Brain },
     { text: t('gameLab.conceptualizing'), icon: Sparkles },
     { text: t('gameLab.generatingCode'), icon: Wand2 },
     { text: t('gameLab.optimizing'), icon: Zap },
     { text: t('gameLab.almostDone'), icon: Gamepad2 },
-  ];
+  ], [t]);
 
-  const toggleGame = (game: GameType) => {
+  const toggleGame = useCallback((game: GameType) => {
     if (selectedGames.find(g => g.id === game.id)) {
       setSelectedGames(prev => prev.filter(g => g.id !== game.id));
     } else if (selectedGames.length < 3) {
@@ -120,14 +115,14 @@ const GameLab = () => {
     } else {
       toast.error(getRandomMessage(t('gameLab.maxGamesSelected')));
     }
-  };
+  }, [selectedGames, t]);
 
   const randomSelect = () => {
     const shuffled = [...gameTypes].sort(() => Math.random() - 0.5);
     setSelectedGames(shuffled.slice(0, 2));
   };
 
-  const handleFusion = async () => {
+  const handleFusion = useCallback(async () => {
     // 根据创建模式进行验证
     if (creationMode === 'fusion') {
       // 融合模式：需要至少2个游戏类型
@@ -240,7 +235,8 @@ const GameLab = () => {
             );
           } catch (error) {
             // 静默失败，不影响主流程
-            console.warn('Failed to increment template usage:', error);
+            // 静默失败，不影响主流程
+            // 错误已通过 ErrorHandler 记录
           }
         }
         if (selectedCategory || selectedTemplate) {
@@ -257,19 +253,13 @@ const GameLab = () => {
             useAutoRepair: true,
             strictValidation: true,
             onProgress: (attempt, status) => {
-              // Update loading message
-              console.log(`Generation attempt ${attempt}: ${status}`);
+              // Update loading message (silent in production)
             },
           }
         );
 
         if (!generationResult.success || !generationResult.htmlCode) {
-          // Log all errors for debugging
-          console.error('Generation failed:', {
-            attempts: generationResult.attempts,
-            errors: generationResult.errors,
-            warnings: generationResult.warnings,
-          });
+          // Errors are logged via ErrorHandler
           
           // Try to provide helpful error message
           let errorMsg = getRandomMessage(t('gameLab.generationFailed'));
@@ -287,10 +277,7 @@ const GameLab = () => {
 
         htmlCode = generationResult.htmlCode;
         
-        // Log warnings if any
-        if (generationResult.warnings.length > 0) {
-          console.warn('Generation warnings:', generationResult.warnings);
-        }
+        // Warnings are handled silently (logged via ErrorHandler if needed)
       } catch (error: any) {
         ErrorHandler.logError(error, 'GameLab.generateGame');
         let errorMsg = ErrorHandler.getUserMessage(error);
@@ -330,7 +317,6 @@ const GameLab = () => {
         code: htmlCode,
       });
 
-      // Remove agent log fetch call
 
       toast.success(getRandomMessage(t('gameLab.success')));
     } catch (error) {
@@ -395,15 +381,15 @@ const GameLab = () => {
       setProgress(0);
       setLoadingStep(0);
     }
-  };
+  }, [creationMode, selectedGames, selectedCategory, selectedTemplate, customDescription, loadingSteps, t]);
 
-  const handleRegenerate = () => {
+  const handleRegenerate = useCallback(() => {
     // 保持用户选择的游戏，只重新生成
     setGeneratedGame(null);
     handleFusion();
-  };
+  }, [handleFusion]);
 
-  const handlePlayGame = async () => {
+  const handlePlayGame = useCallback(async () => {
     if (!generatedGame?.code) return;
 
     const title = generatedGame.name;
@@ -422,36 +408,49 @@ const GameLab = () => {
     }
 
     if (user) {
+      setIsSaving(true);
       try {
+        toast.loading(getRandomMessage(t('gameLab.savingGame')) || '正在保存游戏...', { id: 'saving-game' });
         const creation = await creationService.createCreation({
           title,
           prompt,
           html_code: generatedGame.code,
           is_public: false,
         });
+        toast.success(getRandomMessage(t('gameLab.gameSaved')) || '游戏已保存！', { id: 'saving-game' });
         navigate(`/studio/${creation.id}`);
       } catch (error) {
         ErrorHandler.logError(error, 'GameLab.handlePlayGame');
-        toast.error(ErrorHandler.getUserMessage(error));
+        toast.error(ErrorHandler.getUserMessage(error), { id: 'saving-game' });
         // 保存到 sessionStorage 作为后备方案
         sessionStorage.setItem('pending_creation', JSON.stringify({
           code: generatedGame.code,
           prompt,
           title,
         }));
+        // 保存 returnUrl 以便登录后返回
+        sessionStorage.setItem('returnUrl', '/studio/new');
         navigate('/studio/new');
+      } finally {
+        setIsSaving(false);
       }
     } else {
+      // 未登录用户：保存游戏数据并跳转
+      toast.info(getRandomMessage(t('gameLab.previewMode')) || '预览模式：登录后可以保存和编辑你的游戏', {
+        duration: 4000,
+      });
       sessionStorage.setItem('pending_creation', JSON.stringify({
         code: generatedGame.code,
         prompt,
         title,
       }));
+      // 保存 returnUrl 以便登录后返回
+      sessionStorage.setItem('returnUrl', '/studio/new');
       navigate('/studio/new');
     }
-  };
+  }, [generatedGame, creationMode, selectedCategory, selectedGames, user, navigate, t]);
 
-  const ScoreBar = ({ label, value, icon: Icon, color }: { label: string; value: number; icon: any; color: string }) => (
+  const ScoreBar = memo(({ label, value, icon: Icon, color }: { label: string; value: number; icon: any; color: string }) => (
     <div className="flex items-center gap-3">
       <div className={`w-8 h-8 rounded-lg ${color} flex items-center justify-center`}>
         <Icon className="w-4 h-4 text-white" />
@@ -469,7 +468,7 @@ const GameLab = () => {
         </div>
       </div>
     </div>
-  );
+  ));
 
   return (
     <div className="min-h-screen bg-background">
@@ -593,7 +592,7 @@ const GameLab = () => {
                 />
                 <p className="text-sm text-muted-foreground mt-2">
                   {!selectedTemplate && !customDescription.trim() 
-                    ? t('gameLab.selectTemplateRequired')
+                    ? getRandomMessage(t('gameLab.selectTemplateRequired'))
                     : "可选的：提供额外的游戏描述以帮助 AI 生成更符合你想法的游戏"
                   }
                 </p>
@@ -761,7 +760,7 @@ const GameLab = () => {
             )}
             {creationMode === 'category' && (!selectedCategory || (!selectedTemplate && !customDescription.trim())) && (
               <p className="text-sm text-muted-foreground mt-2">
-                {t('gameLab.selectTemplateRequired')}
+                {getRandomMessage(t('gameLab.selectTemplateRequired'))}
               </p>
             )}
           </div>
@@ -917,10 +916,23 @@ const GameLab = () => {
                 </div>
 
                 <div className="flex gap-3 mt-6">
-                  <Button onClick={handlePlayGame} className="flex-1 gap-2">
-                    <Gamepad2 className="w-4 h-4" />
-                    {t('gameLab.playGame')}
-                  </Button>
+                    <Button 
+                      onClick={handlePlayGame} 
+                      className="flex-1 gap-2"
+                      disabled={isSaving}
+                    >
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          {t('gameLab.saving') || '保存中...'}
+                        </>
+                      ) : (
+                        <>
+                          <Gamepad2 className="w-4 h-4" />
+                          {t('gameLab.playGame')}
+                        </>
+                      )}
+                    </Button>
                   <Button variant="outline" onClick={handleRegenerate} className="gap-2" disabled={isGenerating}>
                     <Shuffle className="w-4 h-4" />
                     {t('gameLab.regenerate')}
@@ -967,4 +979,4 @@ const GameLab = () => {
   );
 };
 
-export default GameLab;
+export default memo(GameLab);

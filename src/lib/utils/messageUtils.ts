@@ -57,7 +57,10 @@ export function getRandomMessage(messages: string | string[] | any): string {
   }
   
   // 如果无法处理，返回空字符串
-  console.warn('getRandomMessage: Unable to extract message from:', messages);
+  // 在生产环境中静默失败，开发环境可以通过 ErrorHandler 记录
+  if (import.meta.env.DEV) {
+    console.warn('getRandomMessage: Unable to extract message from:', messages);
+  }
   return '';
 }
 

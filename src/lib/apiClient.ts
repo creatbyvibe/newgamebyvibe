@@ -1,4 +1,5 @@
 import { supabase, getSupabaseConfig } from '@/integrations/supabase/client';
+import { deduplicatedFetch } from '@/lib/utils/requestDeduplication';
 
 export interface ApiError {
   message: string;

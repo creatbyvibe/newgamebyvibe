@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, memo, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import StudioHeader from '@/components/studio/StudioHeader';
 import FullscreenPreview from '@/components/studio/FullscreenPreview';
 import SplitEditor from '@/components/studio/SplitEditor';
@@ -11,6 +12,7 @@ import VersionHistory from '@/components/studio/VersionHistory';
 import { Loader2 } from 'lucide-react';
 import { creationService } from '@/services/creationService';
 import { ErrorHandler } from '@/lib/errorHandler';
+import AuthModal from '@/components/AuthModal';
 
 interface Creation {
   id: string;
@@ -41,6 +43,7 @@ const StudioPage = () => {
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
   const [isNewCreation, setIsNewCreation] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedCodeRef = useRef<string>('');
@@ -54,6 +57,10 @@ const StudioPage = () => {
     
     try {
       const parsed = JSON.parse(pendingData);
+      
+      // 显示加载提示
+      const loadingToast = toast.loading('正在保存游戏...', { id: 'auto-save' });
+      
       const creation = await creationService.createCreation({
         title: parsed.title || 'Untitled Creation',
         prompt: parsed.prompt || '',
@@ -65,28 +72,42 @@ const StudioPage = () => {
       sessionStorage.removeItem('pending_creation');
       setIsNewCreation(false);
       setCreation(creation as Creation);
-      navigate(`/studio/${creation.id}`, { replace: true });
       
-      toast({
-        title: 'Draft Saved',
-        description: 'Your creation has been saved as a draft',
-      });
+      // 更新 toast 为成功
+      toast.success('游戏已保存！正在跳转...', { id: 'auto-save' });
+      
+      // 短暂延迟后跳转，让用户看到成功提示
+      setTimeout(() => {
+        navigate(`/studio/${creation.id}`, { replace: true });
+      }, 500);
     } catch (error) {
       ErrorHandler.logError(error, 'StudioPage.saveAsDraft');
-      toast({
-        title: 'Error',
-        description: ErrorHandler.getUserMessage(error),
-        variant: 'destructive',
-      });
+      toast.error('保存失败：' + ErrorHandler.getUserMessage(error), { id: 'auto-save' });
+      // 不跳转，让用户看到错误信息
     }
   }, [user, navigate, toast]);
+
+  // 监听用户登录状态，登录后自动保存 pending_creation
+  useEffect(() => {
+    if (user && !authLoading && id === 'new') {
+      const pendingData = sessionStorage.getItem('pending_creation');
+      if (pendingData) {
+        // 延迟一下，确保用户状态已更新
+        setTimeout(() => {
+          saveAsDraft().catch(error => {
+            ErrorHandler.logError(error, 'StudioPage.autoSaveAfterLogin');
+          });
+        }, 500);
+      }
+    }
+  }, [user, authLoading, id, saveAsDraft]);
 
   // Load creation data
   useEffect(() => {
     // 如果认证还在加载，等待完成（最多等待 5 秒后强制继续）
     if (authLoading) {
       const timeoutId = setTimeout(() => {
-        console.warn('Auth loading timeout after 5s, proceeding anyway');
+        // Auth loading timeout - proceed anyway
         setLoading(false);
       }, 5000);
       
@@ -110,7 +131,7 @@ const StudioPage = () => {
               setTitle(parsed.title || 'Untitled Creation');
               lastSavedCodeRef.current = parsed.code || '';
             } catch (e) {
-              console.error('Failed to parse pending creation:', e);
+              ErrorHandler.logError(e, 'StudioPage.parsePendingCreation');
             }
           }
           setIsNewCreation(true);
@@ -122,6 +143,12 @@ const StudioPage = () => {
               ErrorHandler.logError(error, 'StudioPage.autoSaveDraft');
               // Don't show error toast for auto-save failures
             });
+          } else if (!user && pendingData && !authLoading) {
+            // 未登录用户有 pending_creation，显示登录提示
+            toast.info('检测到未保存的游戏，登录后自动保存', {
+              duration: 5000,
+            });
+            setShowAuthModal(true);
           }
         } else if (id) {
           // Load from database
@@ -389,8 +416,34 @@ const StudioPage = () => {
           />
         </TabsContent>
       </Tabs>
+      
+      <AuthModal 
+        open={showAuthModal} 
+        onOpenChange={setShowAuthModal}
+        onSuccess={async () => {
+          // 登录成功后，如果有 pending_creation，自动保存
+          const pendingData = sessionStorage.getItem('pending_creation');
+          if (pendingData) {
+            try {
+              await saveAsDraft();
+              // 清除 returnUrl
+              sessionStorage.removeItem('returnUrl');
+            } catch (error) {
+              ErrorHandler.logError(error, 'StudioPage.onAuthSuccess');
+              // 错误已在 saveAsDraft 中处理
+            }
+          } else {
+            // 没有 pending_creation，检查 returnUrl
+            const returnUrl = sessionStorage.getItem('returnUrl');
+            if (returnUrl) {
+              sessionStorage.removeItem('returnUrl');
+              navigate(returnUrl);
+            }
+          }
+        }}
+      />
     </div>
   );
 };
 
-export default StudioPage;
+export default memo(StudioPage);

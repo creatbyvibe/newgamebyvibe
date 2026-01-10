@@ -42,7 +42,7 @@ const categories: Category[] = [
   { id: "action", name: "动作敏捷", icon: Zap, color: "from-yellow-500 to-amber-500", description: "考验反应速度" },
   { id: "casual", name: "休闲娱乐", icon: Target, color: "from-green-500 to-emerald-500", description: "轻松休闲小游戏" },
   { id: "creative", name: "创意工具", icon: Palette, color: "from-purple-500 to-pink-500", description: "艺术创作工具" },
-  { id: "music", name: "音乐节奏", icon: Music, color: "from-pink-500 to-rose-500", description: "音乐相关游戏" },
+  { id: "music", name: "音乐工具", icon: Music, color: "from-pink-500 to-rose-500", description: "音乐创作工具" },
   { id: "brain", name: "记忆训练", icon: Brain, color: "from-indigo-500 to-violet-500", description: "锻炼大脑记忆" },
   { id: "luck", name: "随机趣味", icon: Dice1, color: "from-teal-500 to-cyan-500", description: "随机决定器" },
 ];
@@ -56,7 +56,6 @@ const templates: GameTemplate[] = [
   
   // 益智解谜
   { id: "2048", title: "2048", description: "滑动合并数字达到2048", prompt: "Create a 2048 puzzle game with smooth sliding animations, score tracking, and game over detection", emoji: "🔢", difficulty: "medium", category: "puzzle" },
-  { id: "sudoku", title: "数独", description: "填充9x9数字格子", prompt: "Create a Sudoku puzzle game with different difficulty levels, input validation, hints, and timer", emoji: "🧩", difficulty: "hard", category: "puzzle" },
   { id: "wordle", title: "猜词游戏", description: "5次机会猜出5字母单词", prompt: "Create a Wordle-like word guessing game with color feedback (green/yellow/gray), keyboard, and 6 attempts", emoji: "📝", difficulty: "medium", category: "puzzle" },
   { id: "sliding", title: "滑动拼图", description: "移动方块还原图案", prompt: "Create a sliding puzzle game (15 puzzle) with numbered tiles, move counter, and shuffle function", emoji: "🔲", difficulty: "medium", category: "puzzle" },
   
@@ -68,8 +67,6 @@ const templates: GameTemplate[] = [
   
   // 休闲娱乐
   { id: "clicker", title: "点击大师", description: "疯狂点击获取积分升级", prompt: "Create a cookie clicker style game with click counter, auto-clickers, upgrades shop, and achievements", emoji: "🍪", difficulty: "easy", category: "casual" },
-  { id: "fishing", title: "钓鱼游戏", description: "耐心钓鱼收集各种鱼", prompt: "Create a fishing game with timing mechanic, different fish rarities, collection book, and relaxing vibes", emoji: "🎣", difficulty: "easy", category: "casual" },
-  { id: "garden", title: "小花园", description: "种植照料你的虚拟花园", prompt: "Create a virtual garden game where you plant seeds, water flowers, watch them grow, and collect them", emoji: "🌻", difficulty: "easy", category: "casual" },
   { id: "pet", title: "电子宠物", description: "照顾你的像素小宠物", prompt: "Create a Tamagotchi-style virtual pet with hunger, happiness, sleep stats, mini-games, and pixel art style", emoji: "🐣", difficulty: "medium", category: "casual" },
   
   // 创意工具
@@ -78,11 +75,10 @@ const templates: GameTemplate[] = [
   { id: "mandala", title: "曼陀罗", description: "对称图案生成器", prompt: "Create a mandala drawing tool with radial symmetry, multiple colors, and mesmerizing patterns", emoji: "🔮", difficulty: "easy", category: "creative" },
   { id: "avatar", title: "头像生成", description: "创建独特的卡通头像", prompt: "Create an avatar maker with face shapes, eyes, hair, accessories options, randomize, and download", emoji: "👤", difficulty: "medium", category: "creative" },
   
-  // 音乐节奏
+  // 音乐工具
   { id: "piano", title: "钢琴", description: "弹奏虚拟钢琴", prompt: "Create a piano keyboard that plays notes with keyboard input, multiple octaves, and visual feedback", emoji: "🎹", difficulty: "easy", category: "music" },
   { id: "drums", title: "架子鼓", description: "用键盘打鼓", prompt: "Create a drum machine with different drum sounds, keyboard shortcuts, and recording playback", emoji: "🥁", difficulty: "easy", category: "music" },
   { id: "beatmaker", title: "节拍器", description: "创作自己的节奏", prompt: "Create a beat maker with grid sequencer, multiple instrument sounds, tempo control, and loop playback", emoji: "🎵", difficulty: "medium", category: "music" },
-  { id: "rhythm", title: "节奏游戏", description: "跟着节拍按键", prompt: "Create a rhythm game where notes fall and player must press keys in time with music, with scoring", emoji: "🎼", difficulty: "hard", category: "music" },
   
   // 记忆训练
   { id: "memory", title: "记忆翻牌", description: "找出配对的卡片", prompt: "Create a memory matching card game with flip animations, move counter, timer, and different themes", emoji: "🃏", difficulty: "easy", category: "brain" },

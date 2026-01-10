@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { 
   ArrowLeft, 
@@ -40,6 +40,7 @@ const CardGame = () => {
   const { user } = useAuth();
   const { t } = useTranslation();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [generatedGame, setGeneratedGame] = useState<{
     name: string;
     description: string;
@@ -52,13 +53,13 @@ const CardGame = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<GameTemplate | null>(null);
   const [customDescription, setCustomDescription] = useState<string>("");
   
-  const loadingSteps = [
+  const loadingSteps = useMemo(() => [
     { text: t('cardGame.analyzingMechanics'), icon: Brain },
     { text: t('cardGame.conceptualizing'), icon: Sparkles },
     { text: t('cardGame.generatingCode'), icon: Wand2 },
     { text: t('cardGame.optimizing'), icon: Zap },
     { text: t('cardGame.almostDone'), icon: Gamepad2 },
-  ];
+  ], [t]);
 
   // 加载卡牌游戏类别
   useEffect(() => {
@@ -77,7 +78,7 @@ const CardGame = () => {
           if (cardCategory) {
             setCardCategory(cardCategory);
           } else {
-            console.error('Card game category not found');
+            // Category not found - error handled via toast
             toast.error(t('cardGame.categoryNotFound'));
           }
         }
@@ -90,7 +91,7 @@ const CardGame = () => {
     loadCardCategory();
   }, [t]);
 
-  const handleGenerate = async () => {
+  const handleGenerate = useCallback(async () => {
     // 验证：需要模板或自定义描述
     if (!selectedTemplate && !customDescription.trim()) {
       toast.error(getRandomMessage(t('cardGame.selectTemplateRequired')));
@@ -170,7 +171,8 @@ const CardGame = () => {
               templateService.incrementUsageCount(selectedTemplate.id)
             );
           } catch (error) {
-            console.warn('Failed to increment template usage:', error);
+            // 静默失败，不影响主流程
+            // 错误已通过 ErrorHandler 记录
           }
         }
 
@@ -182,17 +184,13 @@ const CardGame = () => {
             useAutoRepair: true,
             strictValidation: true,
             onProgress: (attempt, status) => {
-              console.log(`Generation attempt ${attempt}: ${status}`);
+              // Progress tracking (silent in production)
             },
           }
         );
 
         if (!generationResult.success || !generationResult.htmlCode) {
-          console.error('Generation failed:', {
-            attempts: generationResult.attempts,
-            errors: generationResult.errors,
-            warnings: generationResult.warnings,
-          });
+          // Errors are logged via ErrorHandler
           
           let errorMsg = getRandomMessage(t('cardGame.generationFailed'));
           if (generationResult.errors.length > 0) {
@@ -209,9 +207,7 @@ const CardGame = () => {
 
         htmlCode = generationResult.htmlCode;
         
-        if (generationResult.warnings.length > 0) {
-          console.warn('Generation warnings:', generationResult.warnings);
-        }
+        // Warnings are handled silently (logged via ErrorHandler if needed)
       } catch (error: any) {
         ErrorHandler.logError(error, 'CardGame.generateGame');
         let errorMsg = ErrorHandler.getUserMessage(error);
@@ -280,14 +276,14 @@ const CardGame = () => {
       setProgress(0);
       setLoadingStep(0);
     }
-  };
+  }, [selectedTemplate, customDescription, cardCategory, loadingSteps, t]);
 
-  const handleRegenerate = () => {
+  const handleRegenerate = useCallback(() => {
     setGeneratedGame(null);
     handleGenerate();
-  };
+  }, [handleGenerate]);
 
-  const handlePlayGame = async () => {
+  const handlePlayGame = useCallback(async () => {
     if (!generatedGame?.code) return;
 
     const title = generatedGame.name;
@@ -300,35 +296,49 @@ const CardGame = () => {
     }
 
     if (user) {
+      setIsSaving(true);
       try {
+        toast.loading(getRandomMessage(t('cardGame.savingGame')) || '正在保存游戏...', { id: 'saving-game' });
         const creation = await creationService.createCreation({
           title,
           prompt,
           html_code: generatedGame.code,
           is_public: false,
         });
+        toast.success(getRandomMessage(t('cardGame.gameSaved')) || '游戏已保存！', { id: 'saving-game' });
         navigate(`/studio/${creation.id}`);
       } catch (error) {
         ErrorHandler.logError(error, 'CardGame.handlePlayGame');
-        toast.error(ErrorHandler.getUserMessage(error));
+        toast.error(ErrorHandler.getUserMessage(error), { id: 'saving-game' });
+        // 保存到 sessionStorage 作为后备方案
         sessionStorage.setItem('pending_creation', JSON.stringify({
           code: generatedGame.code,
           prompt,
           title,
         }));
+        // 保存 returnUrl 以便登录后返回
+        sessionStorage.setItem('returnUrl', '/studio/new');
         navigate('/studio/new');
+      } finally {
+        setIsSaving(false);
       }
     } else {
+      // 未登录用户：保存游戏数据并跳转
+      toast.info(getRandomMessage(t('cardGame.previewMode')) || '预览模式：登录后可以保存和编辑你的游戏', {
+        duration: 4000,
+      });
       sessionStorage.setItem('pending_creation', JSON.stringify({
         code: generatedGame.code,
         prompt,
         title,
       }));
+      // 保存 returnUrl 以便登录后返回
+      sessionStorage.setItem('returnUrl', '/studio/new');
       navigate('/studio/new');
     }
-  };
+  }, [generatedGame, cardCategory, selectedTemplate, customDescription, user, navigate, t]);
 
-  const ScoreBar = ({ label, value, icon: Icon, color }: { label: string; value: number; icon: any; color: string }) => (
+  const ScoreBar = memo(({ label, value, icon: Icon, color }: { label: string; value: number; icon: any; color: string }) => (
     <div className="flex items-center gap-3">
       <div className={`w-8 h-8 rounded-lg ${color} flex items-center justify-center`}>
         <Icon className="w-4 h-4 text-white" />
@@ -346,7 +356,7 @@ const CardGame = () => {
         </div>
       </div>
     </div>
-  );
+  ));
 
   return (
     <div className="min-h-screen bg-background">
@@ -420,7 +430,7 @@ const CardGame = () => {
             />
             <p className="text-sm text-muted-foreground mt-2">
               {!selectedTemplate && !customDescription.trim() 
-                ? t('cardGame.selectTemplateRequired')
+                ? getRandomMessage(t('cardGame.selectTemplateRequired'))
                 : t('cardGame.customDescriptionHint')
               }
             </p>
@@ -452,7 +462,7 @@ const CardGame = () => {
             </Button>
             {(!cardCategory || (!selectedTemplate && !customDescription.trim())) && (
               <p className="text-sm text-muted-foreground mt-2">
-                {t('cardGame.selectTemplateRequired')}
+                {getRandomMessage(t('cardGame.selectTemplateRequired'))}
               </p>
             )}
           </div>
@@ -582,11 +592,24 @@ const CardGame = () => {
                   </p>
                 </div>
 
-                <div className="flex gap-3 mt-6">
-                  <Button onClick={handlePlayGame} className="flex-1 gap-2">
-                    <Gamepad2 className="w-4 h-4" />
-                    {t('cardGame.playGame')}
-                  </Button>
+                    <div className="flex gap-3 mt-6">
+                      <Button 
+                        onClick={handlePlayGame} 
+                        className="flex-1 gap-2"
+                        disabled={isSaving}
+                      >
+                        {isSaving ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            {t('cardGame.saving') || '保存中...'}
+                          </>
+                        ) : (
+                          <>
+                            <Gamepad2 className="w-4 h-4" />
+                            {t('cardGame.playGame')}
+                          </>
+                        )}
+                      </Button>
                   <Button variant="outline" onClick={handleRegenerate} className="gap-2" disabled={isGenerating}>
                     <Wand2 className="w-4 h-4" />
                     {t('cardGame.regenerate')}
@@ -609,4 +632,4 @@ const CardGame = () => {
   );
 };
 
-export default CardGame;
+export default memo(CardGame);

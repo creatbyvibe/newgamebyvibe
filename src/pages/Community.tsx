@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { Play, Heart, User, TrendingUp, Clock, Flame, Search } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { creationService } from "@/services/creationService";
 import { userService } from "@/services/userService";
 import { ErrorHandler } from "@/lib/errorHandler";
+import { debounce } from "@/lib/utils/debounce";
+import { CreationListSkeleton } from "@/components/CreationListSkeleton";
 
 interface Creation {
   id: string;
@@ -44,20 +46,31 @@ const Community = () => {
   const [sortBy, setSortBy] = useState<SortType>("trending");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const sortOptions: { key: SortType; label: string; icon: React.ReactNode }[] = [
-    { key: "trending", label: t('community.trending'), icon: <Flame className="w-4 h-4" /> },
-    { key: "newest", label: t('community.newest'), icon: <Clock className="w-4 h-4" /> },
-    { key: "popular", label: t('community.popular'), icon: <TrendingUp className="w-4 h-4" /> },
-  ];
+  const sortOptions = useMemo(() => [
+    { key: "trending" as SortType, label: t('community.trending'), icon: <Flame className="w-4 h-4" /> },
+    { key: "newest" as SortType, label: t('community.newest'), icon: <Clock className="w-4 h-4" /> },
+    { key: "popular" as SortType, label: t('community.popular'), icon: <TrendingUp className="w-4 h-4" /> },
+  ], [t]);
 
   useEffect(() => {
     fetchWorks();
     if (user) {
       fetchUserLikes();
     }
-  }, [user, sortBy]);
+  }, [user, sortBy, fetchWorks, fetchUserLikes]);
 
-  const fetchWorks = async () => {
+  // 搜索输入变化时使用防抖
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchQuery.trim() || !searchQuery.trim()) {
+        fetchWorks();
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, fetchWorks]);
+
+  const fetchWorks = useCallback(async () => {
     try {
       let data: Creation[];
       
@@ -92,7 +105,7 @@ const Community = () => {
     }
   };
 
-  const fetchUserLikes = async () => {
+  const fetchUserLikes = useCallback(async () => {
     if (!user) return;
     try {
       const likes = await userService.getUserLikes(user.id);
@@ -100,9 +113,9 @@ const Community = () => {
     } catch (error) {
       ErrorHandler.logError(error, 'Community.fetchUserLikes');
     }
-  };
+  }, [user]);
 
-  const handleLike = async (e: React.MouseEvent, creationId: string) => {
+  const handleLike = useCallback(async (e: React.MouseEvent, creationId: string) => {
     e.stopPropagation();
     if (!user) {
       toast.error("请先登录");
@@ -133,16 +146,22 @@ const Community = () => {
       ErrorHandler.logError(error, 'Community.handleLike');
       toast.error(ErrorHandler.getUserMessage(error));
     }
-  };
+  }, [user, userLikes, works]);
 
-  const handlePlay = (work: Creation) => {
+  const handlePlay = useCallback((work: Creation) => {
     navigate(`/creation/${work.id}`);
-  };
+  }, [navigate]);
 
-  const filteredWorks = works.filter((work) =>
-    work.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    work.prompt.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // 如果已经在 fetchWorks 中搜索，这里不需要再次过滤
+  // 但如果需要客户端过滤，使用 useMemo 优化
+  const filteredWorks = useMemo(() => {
+    if (!searchQuery.trim()) return works;
+    const query = searchQuery.toLowerCase();
+    return works.filter((work) =>
+      work.title.toLowerCase().includes(query) ||
+      work.prompt.toLowerCase().includes(query)
+    );
+  }, [works, searchQuery]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -192,15 +211,7 @@ const Community = () => {
 
           {/* Gallery */}
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="animate-pulse">
-                  <div className="aspect-video bg-muted rounded-xl mb-3" />
-                  <div className="h-4 bg-muted rounded w-3/4 mb-2" />
-                  <div className="h-3 bg-muted rounded w-1/2" />
-                </div>
-              ))}
-            </div>
+            <CreationListSkeleton count={6} />
           ) : filteredWorks.length === 0 ? (
             <div className="text-center py-16 bg-muted/30 rounded-2xl border border-border">
               <p className="text-muted-foreground mb-4">
@@ -282,4 +293,4 @@ const Community = () => {
   );
 };
 
-export default Community;
+export default memo(Community);

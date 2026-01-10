@@ -24,14 +24,14 @@ const featuredTemplates = [
     gradient: "from-blue-500 to-cyan-500",
   },
   {
-    title: "Pomodoro",
-    emoji: "🍅",
-    description: "专注计时器",
-    gradient: "from-red-500 to-orange-500",
+    title: "Snake",
+    emoji: "🐍",
+    description: "经典贪吃蛇",
+    gradient: "from-green-500 to-emerald-500",
   },
   {
     title: "Memory Cards",
-    emoji: "🎴",
+    emoji: "🃏",
     description: "记忆翻牌游戏",
     gradient: "from-purple-500 to-pink-500",
   },
@@ -39,7 +39,7 @@ const featuredTemplates = [
     title: "Drawing Board",
     emoji: "🎨",
     description: "创意画板",
-    gradient: "from-green-500 to-teal-500",
+    gradient: "from-orange-500 to-red-500",
   },
 ];
 

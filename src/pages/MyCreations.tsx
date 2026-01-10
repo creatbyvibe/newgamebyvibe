@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import Navbar from "@/components/Navbar";
 import { Play, Heart, Trash2, Globe, Lock, Loader2, Plus } from "lucide-react";
+import { CreationListSkeleton } from "@/components/CreationListSkeleton";
 import { toast } from "sonner";
 import { creationService } from "@/services/creationService";
 import { ErrorHandler } from "@/lib/errorHandler";
@@ -81,10 +82,27 @@ const MyCreations = () => {
     }
   };
 
-  if (authLoading || loading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="pt-20 sm:pt-24 pb-16 px-4 sm:px-6">
+          <div className="max-w-5xl mx-auto">
+            <div className="mb-8">
+              <div className="h-8 w-48 bg-muted animate-pulse rounded mb-2" />
+              <div className="h-4 w-64 bg-muted animate-pulse rounded" />
+            </div>
+            <CreationListSkeleton count={6} />
+          </div>
+        </main>
       </div>
     );
   }

@@ -12,9 +12,10 @@ import { getRandomMessage } from "@/lib/utils/messageUtils";
 interface AuthModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
 }
 
-const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
+const AuthModal = ({ open, onOpenChange, onSuccess }: AuthModalProps) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -116,19 +117,17 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
         } else {
           toast.success(getRandomMessage(t('auth.signupSuccess')));
         }
+        
+        // 执行成功回调
+        onSuccess?.();
+        
         onOpenChange(false);
         setEmail("");
         setPassword("");
       }
     } catch (err: any) {
-      console.error("Auth error:", err);
+      ErrorHandler.logError(err, 'AuthModal.handleSubmit');
       const errorMsg = err?.message || "未知错误";
-      
-      // 添加调试信息
-      console.log('🔍 注册/登录失败，调试信息:');
-      console.log('  - 错误信息:', errorMsg);
-      console.log('  - 环境变量 URL:', import.meta.env.VITE_SUPABASE_URL ? '已设置' : '未设置');
-      console.log('  - 环境变量 Key:', import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ? '已设置 (' + import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY.substring(0, 30) + '...)' : '未设置');
       
       if (errorMsg.includes("fetch") || errorMsg.includes("network") || errorMsg.includes("Failed to fetch")) {
         toast.error(getRandomMessage(t('auth.cannotConnectSupabase')), { duration: 8000 });
